@@ -1,10 +1,46 @@
-"""A/B 实验配置。
+"""A/B 实验配置 — 扩展版。
 
-控制运行哪些条件、模型选择、日志路径等。
+支持 5 条件、感知模型选择、时间衰减子实验。
 """
 
 from dataclasses import dataclass, field
 from typing import Optional
+
+
+# ── 条件元数据表 ──
+CONDITION_META = {
+    "A_full": {
+        "label": "A_full",
+        "name": "完整数学引擎",
+        "description": "当前生产管线：防御→反馈→动力学→表面投影",
+    },
+    "A_no_def": {
+        "label": "A_no_def",
+        "name": "引擎无防御",
+        "description": "跳过 Bowlby 防御剖面，刺激直接进入动力学",
+    },
+    "B_scratch": {
+        "label": "B_scratch",
+        "name": "LLM 自报（无上下文）",
+        "description": "LLM 每轮从零推断状态，无上一轮状态信息",
+    },
+    "B_context": {
+        "label": "B_context",
+        "name": "LLM 自报（有上下文）",
+        "description": "LLM 推断时注入上一轮状态描述作为上下文",
+    },
+    "C_none": {
+        "label": "C_none",
+        "name": "无状态基线",
+        "description": "无状态注入，仅角色 prompt + 对话历史",
+    },
+}
+
+DEFAULT_CONDITIONS = ["A_full", "B_scratch", "C_none"]
+"""默认运行条件（与旧版 A/B/C 兼容）"""
+
+ALL_CONDITIONS = list(CONDITION_META.keys())
+"""全部 5 条件"""
 
 
 @dataclass
@@ -12,8 +48,8 @@ class ExperimentConfig:
     """全局实验配置"""
 
     # ── 运行控制 ──
-    conditions: list[str] = field(default_factory=lambda: ["A", "B", "C"])
-    """运行的实验条件列表"""
+    conditions: list[str] = field(default_factory=lambda: DEFAULT_CONDITIONS)
+    """运行的实验条件列表（来自 CONDITION_META 的 label）"""
 
     scenarios_file: str = ""
     """场景文件路径（空=使用内置场景）"""
@@ -27,21 +63,23 @@ class ExperimentConfig:
     random_seed: int = 42
     """全局随机种子"""
 
+    # ── 感知 ──
+    perception_provider: str = "deepseek"
+    """感知提供者: "deepseek" | "ollama" """
+
+    # ── 时间衰减 ──
+    time_decay_hours: float = 0.0
+    """对话间隔时间（小时），0=连续对话"""
+
     # ── 模型 ──
     generation_model: str = "deepseek-v4-pro"
     """回复生成模型"""
-
-    perception_model: str = "qwen2.5:7b"
-    """感知模型（Ollama）"""
-
-    state_inference_model: str = "deepseek-v4-pro"
-    """条件 B 状态推断模型（与生成用不同实例）"""
 
     state_inference_temperature: float = 0.3
     """状态推断温度（低=稳定推断）"""
 
     judge_model: str = "deepseek-v4-pro"
-    """LLM-as-Judge 模型（与生成模型不同）"""
+    """LLM-as-Judge 模型"""
 
     judge_temperature: float = 0.0
     """评判温度（0=确定性评分）"""
@@ -60,32 +98,18 @@ class ExperimentConfig:
     collect_state_trajectories: bool = True
     """是否收集完整状态轨迹"""
 
-    collect_raw_responses: bool = True
-    """是否收集原始回复文本"""
 
-    # ── 条件 C 的刺激开关 ──
-    condition_c_skip_perception: bool = True
-    """条件 C 是否完全跳过感知（True=无刺激提取）"""
+def condition_label(code: str) -> str:
+    """返回条件的人类可读标签。"""
+    meta = CONDITION_META.get(code)
+    if meta:
+        return f"{code} ({meta['name']})"
+    return code
 
 
-@dataclass
-class ScenarioConfig:
-    """单个场景配置"""
-
-    name: str
-    """场景名称"""
-
-    category: str
-    """场景类别：关系升温/冲突对抗/日常闲聊/情感重负/矛盾信号"""
-
-    traits: list[float]
-    """角色人格特质（10 维）"""
-
-    seed_user_inputs: list[str]
-    """种子对话的用户输入（3 轮）"""
-
-    test_user_inputs: list[str]
-    """测试轮的用户输入（2 轮）"""
-
-    description: str = ""
-    """场景描述/期望的情感弧线"""
+def condition_summary() -> str:
+    """返回条件汇总表。"""
+    lines = [f"{'代码':<12} {'名称':<20} {'说明':<40}", "-" * 72]
+    for code, meta in CONDITION_META.items():
+        lines.append(f"{code:<12} {meta['name']:<20} {meta['description']:<40}")
+    return "\n".join(lines)

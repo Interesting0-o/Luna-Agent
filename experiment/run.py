@@ -68,7 +68,7 @@ def setup_logging(output_dir: str, run_tag: str):
     logger.info(f"日志文件: {log_file}")
 
 
-def run_experiment(config: ExperimentConfig, mock_mode: bool = False) -> dict:
+def run_experiment(config: ExperimentConfig) -> dict:
     """运行完整实验。
 
     Args:
@@ -109,7 +109,6 @@ def run_experiment(config: ExperimentConfig, mock_mode: bool = False) -> dict:
                 traits_array=traits,
                 scenario_name=name,
                 config=config,
-                mock_mode=mock_mode,
             )
             elapsed = time.time() - t0
             logger.info(f"  ✓ 完成 ({elapsed:.1f}s)")
@@ -301,21 +300,31 @@ def parse_args():
         "--mock", action="store_true",
         help="mock 模式（无 API 调用，使用合成数据验证框架）"
     )
+    parser.add_argument(
+        "--perception", type=str, default=None, choices=["ollama", "deepseek"],
+        help="感知提供者（ollama | deepseek），默认 deepseek"
+    )
+    parser.add_argument(
+        "--time-decay", type=float, default=None,
+        help="对话间隔时间（小时），默认 0"
+    )
+    parser.add_argument(
+        "--list-conditions", action="store_true",
+        help="列出所有可用条件"
+    )
     return parser.parse_args()
 
 
 def main():
-    """实验主入口。"""
     args = parse_args()
 
     if args.list_scenarios:
         print(get_scenario_summary())
         return
 
-    if args.analyze_only:
-        # 仅分析已有结果
-        print(f"分析模式: {args.analyze_only}")
-        print("（待实现：加载已有结果 → 重新计算指标 → 生成报告）")
+    if args.list_conditions:
+        from experiment.config import condition_summary
+        print(condition_summary())
         return
 
     config = ExperimentConfig(
@@ -324,7 +333,13 @@ def main():
     )
 
     if args.conditions:
-        config.conditions = [c.strip().upper() for c in args.conditions.split(",")]
+        config.conditions = [c.strip() for c in args.conditions.split(",")]
+
+    if args.perception:
+        config.perception_provider = args.perception
+
+    if args.time_decay is not None:
+        config.time_decay_hours = args.time_decay
 
     if args.pilot:
         config.scenarios_file = ""  # 使用内置场景，但只取前 2 个
@@ -338,7 +353,7 @@ def main():
     logger.info(f"条件: {config.conditions}")
     logger.info(f"运行标识: {run_tag}")
     logger.info(f"输出目录: {config.output_dir}")
-    logger.info(f"Mock模式: {'开启' if args.mock else '关闭 (需要API key)'}")
+    logger.info(f"感知提供者: {config.perception_provider}")
     logger.info(f"Pilot模式: {'开启' if args.pilot else '关闭'}")
     logger.info("=" * 60)
 
@@ -355,7 +370,7 @@ def main():
     logger.info(f"\n{get_scenario_summary()}")
 
     # 运行实验
-    results = run_experiment(config, mock_mode=args.mock)
+    results = run_experiment(config)
 
     # 打印摘要
     n_ok = sum(1 for v in results.values() if "error" not in v)
