@@ -290,7 +290,7 @@ deact[维度] = baseline[dim](traits)     ← 静态（trait 不变化）
             → sigmoid((x-0.35)*5.0)
 ```
 
-**关键发现：维度间差异化只来自第一行的 trait 基线。** 但 traits 在 Lunar 中**从不更新**（已知问题 1），因此维度间的差异是**固定偏移**，不随时间变化。所有**动态变化**来自共享调制器（rel_loosen、stress、insecurity），而这 3 个源是 7 维完全共享的。
+**关键发现：维度间差异化只来自第一行的 trait 基线。** 但 traits 在 Luna 中**从不更新**（已知问题 1），因此维度间的差异是**固定偏移**，不随时间变化。所有**动态变化**来自共享调制器（rel_loosen、stress、insecurity），而这 3 个源是 7 维完全共享的。
 
 原始方差分解（n=50,000，修复前）：
 
@@ -332,7 +332,7 @@ affection、tension、longing）各有独立的 \(7,\) 权重向量，定义了�
 - `insecurity[ABANDONMENT] = 0.14` — 极度放大对抛弃的恐惧
 - `insecurity[TEASING] = 0.00` — 不影响
 
-完整权重表见 [`state_engine/_defenses.py`](../state_engine/_defenses.py) 模块顶层的命名常量。
+完整权重表见 [`state_engine/_defenses.py`](../../state_engine/_defenses.py) 模块顶层的命名常量。
 
 #### 7.3.5 Traits 静态问题的传导效应（仍存在）
 
