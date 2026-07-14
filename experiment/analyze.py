@@ -47,7 +47,12 @@ def compute_metrics(raw: dict) -> dict:
     for sname, sdata in raw.items():
         if "error" in sdata:
             continue
-        metrics = compute_all_metrics(sdata)
+        # 只传入条件键（排除 auto_metrics 等非条件键）
+        cond_data = {k: v for k, v in sdata.items()
+                     if k.startswith(("A_", "B_", "C_"))}
+        if not cond_data:
+            continue
+        metrics = compute_all_metrics(cond_data)
         sdata["auto_metrics"] = metrics
 
     # 跨条件汇总
