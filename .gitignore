@@ -16,3 +16,6 @@ langgraph.json
 source
 .env
 CLAUDE.md
+
+# Experiment outputs (large, regenerable)
+experiment/outputs/

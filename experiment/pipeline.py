@@ -82,7 +82,7 @@ def _run_perception(
     # Check if this condition uses perception
     if condition.startswith("B_") or condition.startswith("A_"):
         perception_fn = _get_perception_fn(config)
-        cfg = {"max_retries": 2, "context_window": 10, "retry_emphases": []}
+        cfg = {"max_retries": 1, "context_window": 10, "retry_emphases": []}
         stim_result = perception_fn(
             conversation_history, cfg,
             internal_state=internal,

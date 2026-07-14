@@ -57,7 +57,7 @@ def call_perception_with_retry(
     Returns:
         {"user_stimuli": ndarray(7,)} 或 None
     """
-    max_attempts = cfg.get("max_retries", 2)
+    max_attempts = cfg.get("max_retries", 1)
     last_error = None
 
     # 构建 prompt：提取用户最新输入

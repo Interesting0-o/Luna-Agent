@@ -202,7 +202,7 @@ def llm_state_inference(
     config: ExperimentConfig,
     previous_state_text: str = "",
     delta_hours: float = 0.0,
-    max_retries: int = 2,
+    max_retries: int = 0,
 ) -> Optional[dict]:
     """用 LLM 推断当前状态。
 
