@@ -18,7 +18,7 @@ from prompts import PERCEPTION_SYSTEM_PROMPT
 from typing import Optional
 from langchain.messages import SystemMessage, HumanMessage, AIMessage
 from llm import perception_model
-from state import ST_LABELS, stimuli_from_dict, StimulusMetadata
+from state import ST_SIZE, ST_LABELS, stimuli_from_dict, StimulusMetadata
 
 logger = logging.getLogger(__name__)
 
