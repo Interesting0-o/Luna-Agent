@@ -26,7 +26,8 @@ md/
 |------|------|
 | [CRITIQUE.md](01-vision/CRITIQUE.md) | 首席批判官报告：三条致命假设与项目存续条件。**必须首先阅读。** 论证了纯数学情感模拟路线的不可通性，提出了混合架构的必要性 |
 | [HYBRID_ARCHITECTURE_STRATEGY.md](01-vision/HYBRID_ARCHITECTURE_STRATEGY.md) | 路线转向声明：从"数学引擎独立模拟情感" → "数学引擎为 LLM 提供外部因果骨架"。基于学术证据定位混合架构 |
-| [EXPERIMENT_A_B.md](01-vision/EXPERIMENT_A_B.md) | A/B 实验方案：量化数学引擎相对于纯 LLM 方案的边际价值。待执行 |
+| [EXPERIMENT_A_B.md](01-vision/EXPERIMENT_A_B.md) | A/B 实验方案：量化数学引擎的边际价值 |
+| [EXPERIMENT_REPORT.md](01-vision/EXPERIMENT_REPORT.md) | **A/B 多变量实验综合报告**：5条件对比的定量+定性结论（2026-07-14） |
 
 ## 02 — 架构设计（Architecture）
 
@@ -78,7 +79,7 @@ md/
 
 ### 🚀 要看下一步（看规划）
 7. `04-plans/ROADMAP.md` — 路线图
-8. `04-plans/EXPERIMENT_A_B.md` （即将迁移至此）— 验证实验
+8. `04-plans/EXPERIMENT_A_B.md` — 验证实验
 
 ---
 
