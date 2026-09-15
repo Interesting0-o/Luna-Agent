@@ -180,9 +180,6 @@ def state_engine_node(state: State) -> dict:
         internal = decayed["internal_state"]
         relationship = decayed["relationship_state"]
 
-    # ── 双速动力学计数器（关系态每 REL_BUFFER_INTERVAL 轮更新一次） ──
-    rel_counter = state.get("rel_update_counter") or 0
-
     # ── 运行主引擎（用衰减后的状态） ──
     result = update_all(
         current_internal=internal,
@@ -192,7 +189,6 @@ def state_engine_node(state: State) -> dict:
         prev_surface=prev_surface,
         stimulus_metadata=metadata if meta_dict is not None else None,
         delta_hours=delta_hours,
-        rel_counter=rel_counter,
     )
 
     # ── 持久化衰减调制因子和时间戳，清理临时字段 ──

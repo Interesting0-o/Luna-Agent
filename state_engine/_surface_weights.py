@@ -215,13 +215,18 @@ def _build_surface_feedback_matrix() -> np.ndarray:
     mapper.connect(S_VULNERABILITY, I_LONGING, 0.04, "trace", (0.01, 0.08),
                    "流露脆弱→渴望微增", "calibrated", "2026-06-22")
 
-    # ── ③ 表达消耗成本：活跃表达消耗精力 ──
-    mapper.connect(S_EXPRESSIVENESS, I_ENERGY, -0.06, "trace", (-0.10, -0.02),
-                   "表达外露→精力消耗", "calibrated", "2026-06-22")
-    mapper.connect(S_EXPRESSIVENESS, I_MENTAL_FATIGUE, 0.02, "trace", (0.02, 0.09),
-                   "表达外露→疲劳微增", "calibrated", "2026-06-22")
-    mapper.connect(S_RESTRAINT, I_MENTAL_FATIGUE, 0.04, "trace", (0.01, 0.08),
-                   "克制压抑→精神疲劳", "calibrated", "2026-06-22")
+    # ── ③ 表达消耗成本：压抑远大于表达（Richards & Gross, 2000）──
+    # 修复 2026-06-25：旧版表达(-0.06) > 压抑(+0.04) 与实际相反。
+    # 表达是低位脑干本能反射，几乎不费劲（脸酸而已）；
+    # 压抑需持续动用前额叶抑制冲动，消耗巨大（虚脱）。
+    mapper.connect(S_EXPRESSIVENESS, I_ENERGY, -0.03, "trace", (-0.06, -0.01),
+                   "表达外露→轻量精力消耗（本能反射，代价低）", "theory", "2026-06-25")
+    mapper.connect(S_EXPRESSIVENESS, I_MENTAL_FATIGUE, 0.02, "trace", (0.01, 0.06),
+                   "表达外露→轻微疲劳（脸酸）", "theory", "2026-06-25")
+    mapper.connect(S_RESTRAINT, I_MENTAL_FATIGUE, 0.10, "weak", (0.05, 0.16),
+                   "克制压抑→重度精神疲劳（前额叶持续抑制）", "theory", "2026-06-25")
+    mapper.connect(S_RESTRAINT, I_STRESS, 0.08, "trace", (0.03, 0.14),
+                   "克制压抑→压力积蓄（表里不一的失调成本）", "theory", "2026-06-25")
 
     M = mapper.build_matrix(
         (S_SIZE, I_SIZE),   # (7, 8)

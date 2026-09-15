@@ -160,11 +160,9 @@ class TestAnomalyRateParameters:
             alpha = soft_clamp(alpha, 0.02, 0.35)
             alphas[i] = alpha
 
-            # β: 逐维度向量，来自防御剖面
+            # β: 常数（方案 B, 2026-06-24 — 防御不再调制 β）
             profiles = compute_defense_profiles(t, r, i_state)
-            deact, hyper = profiles[0], profiles[1]
-            beta_stim = 0.05 + hyper * 0.35 - deact * 0.15
-            beta_stim = np.clip(beta_stim, 0.01, 0.35)
+            beta_stim = np.full(ST_SIZE, 0.05, dtype=np.float64)
             beta_means[i] = beta_stim.mean()
             beta_mins[i] = beta_stim.min()
             beta_maxs[i] = beta_stim.max()
@@ -183,8 +181,7 @@ class TestAnomalyRateParameters:
         total = 0
         for i in range(n):
             profiles = compute_defense_profiles(traits[i], rel[i], internal[i])
-            deact, hyper = profiles[0], profiles[1]
-            beta_stim = np.clip(0.05 + hyper * 0.35 - deact * 0.15, 0.01, 0.35)
+            beta_stim = np.full(ST_SIZE, 0.05, dtype=np.float64)
             total += (beta_stim < alphas[i]).sum()
         coupling_dominated_pct = total / (n * ST_SIZE) * 100
         print(f"  耦合主导的刺激维度比例 (β[s] < α): {coupling_dominated_pct:.1f}%")

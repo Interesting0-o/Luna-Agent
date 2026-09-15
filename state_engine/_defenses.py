@@ -129,3 +129,48 @@ def apply_defenses(
     outer = soft_clamp(outer, 0.0, 1.0)
 
     return inner, outer
+
+
+def compute_defense_metabolic_cost(
+    profiles: np.ndarray,
+    traits: np.ndarray,
+) -> np.ndarray:
+    """防御剖面的即时代谢成本（独立于表面反馈通路）。
+
+    高 a（过度激活/内心翻涌）和 高 d（去激活/压抑）都消耗能量：
+      - hyperactivation: 情绪放大需要认知资源 → MentalFatigue↑, Stress↑
+      - deactivation: 压抑需要前额叶抑制控制 → Energy↓, MentalFatigue↑
+
+    这在表面反馈（s→h 通路）中未被覆盖——当 s=0 时反馈通路无成本，
+    但高 a + 高 d 时"面无表情但内心惊涛骇浪"的现实消耗巨大。
+
+    修复 2026-06-25 (#4)：在动力学之前直接扣除防御的代谢成本。
+
+    Args:
+        profiles: 防御剖面 (2, 7) — [0]=deactivation, [1]=hyperactivation
+        traits: 人格特质 (10,)
+
+    Returns:
+        cost (8,) 加到 current_internal 上，在动力学之前生效
+    """
+    from state import I_ENERGY, I_STRESS, I_MENTAL_FATIGUE
+
+    cost = np.zeros(8, dtype=np.float64)
+    deact = np.mean(profiles[0])  # 平均去激活水平 [0, 1]
+    hyper = np.mean(profiles[1])  # 平均过度激活水平 [0, 1]
+
+    # ① 去激活成本：压抑消耗执行控制资源
+    # 前额叶持续抑制冲动 → Energy↓ + MentalFatigue↑
+    cost[I_ENERGY] -= 0.04 * deact
+    cost[I_MENTAL_FATIGUE] += 0.06 * deact
+
+    # ② 过度激活成本：情绪放大消耗认知资源
+    # 持续的反刍/放大 → Stress↑ + MentalFatigue↑
+    cost[I_STRESS] += 0.04 * hyper
+    cost[I_MENTAL_FATIGUE] += 0.06 * hyper
+
+    # ③ 高焦虑者成本更高（情绪调节效率更低）
+    anxiety_mod = 1.0 + max(0.0, float(traits[8])) * 0.3  # T_ATTACHMENT_ANXIETY
+    cost *= anxiety_mod
+
+    return cost

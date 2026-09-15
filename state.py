@@ -1,4 +1,4 @@
-"""Lunar 人格状态的类型定义。
+"""Luna 人格状态的类型定义。
 
 所有纯 float 参数的 TypedDict 已替换为 numpy 数组。
 每个数组的维度索引由对应的命名常量定义（如 I_ENERGY、T_PRIDE 等），
@@ -297,9 +297,6 @@ class State(TypedDict):
 
     # ── 时间戳：上次状态引擎更新时间（用于计算 Δt） ──
     last_update_timestamp: Optional[float]
-
-    # ── 双速动力学：关系态更新计数器（rel_buffer） ──
-    rel_update_counter: Optional[int]     # 每 N 轮更新一次关系态，N=3
 
     # ── 状态格式化输出（state_formatter_node 写入，llm_node 消费） ──
     state_description: Optional[str]

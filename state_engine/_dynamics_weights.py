@@ -27,23 +27,26 @@ def _build_self_decay() -> WeightVector:
         "SELF_DECAY", I_LABELS,
         "内部状态自阻尼率（每维独立，替代旧统一 0.15）",
     )
-    # 正值 setpoint 维度阻尼更小，避免隐性"税"
-    vec.connect("energy", I_ENERGY, 0.10, "weak", (0.05, 0.15),
-                "高基线(+0.4)→慢衰减，防空转税", "calibrated", "2026-06-20")
-    vec.connect("stress", I_STRESS, 0.12, "weak", (0.08, 0.18),
-                "负基线(-0.56)→中等衰减", "calibrated", "2026-06-20")
-    vec.connect("loneliness", I_LONELINESS, 0.12, "weak", (0.08, 0.18),
-                "负基线(-0.40)→中等衰减", "calibrated", "2026-06-20")
-    vec.connect("insecurity", I_INSECURITY, 0.12, "weak", (0.08, 0.18),
-                "负基线(-0.46)→中等衰减", "calibrated", "2026-06-20")
-    vec.connect("irritation", I_IRRITATION, 0.12, "weak", (0.08, 0.18),
-                "负基线(-0.80)→中等持续", "calibrated", "2026-06-20")
-    vec.connect("longing", I_LONGING, 0.12, "weak", (0.08, 0.18),
-                "负基线(-0.19)→中等衰减", "calibrated", "2026-06-20")
-    vec.connect("social_battery", I_SOCIAL_BATTERY, 0.10, "weak", (0.05, 0.15),
-                "正基线(+0.20)→慢衰减（由DECAY_TARGETS补正）", "calibrated", "2026-06-20")
-    vec.connect("mental_fatigue", I_MENTAL_FATIGUE, 0.12, "weak", (0.08, 0.18),
-                "负基线(-0.71)→中等衰减", "calibrated", "2026-06-20")
+    # 差异化时间常数：宽范围 [0.06, 0.22] 创建天然正交动力学
+    # 快速维 (0.18-0.22): 对即时刺激敏感，快速回归
+    # 中速维 (0.12-0.15): 积累效应，跨轮持续
+    # 慢速维 (0.06-0.08): 类特质基底，缓慢漂移
+    vec.connect("energy", I_ENERGY, 0.06, "weak", (0.04, 0.12),
+                "能量是资源维度→慢衰减，保持基线(+0.4)", "calibrated", "2026-06-24")
+    vec.connect("stress", I_STRESS, 0.15, "weak", (0.08, 0.22),
+                "压力中速衰减——不过快消失也不持续积累", "calibrated", "2026-06-24")
+    vec.connect("loneliness", I_LONELINESS, 0.18, "weak", (0.10, 0.25),
+                "孤独快速衰减——情境性社交感受", "calibrated", "2026-06-24")
+    vec.connect("insecurity", I_INSECURITY, 0.10, "weak", (0.06, 0.16),
+                "不安慢衰减——依恋相关的不安全感有持久性", "calibrated", "2026-06-24")
+    vec.connect("irritation", I_IRRITATION, 0.22, "weak", (0.14, 0.30),
+                "烦躁最快衰减——情绪波动短暂", "calibrated", "2026-06-24")
+    vec.connect("longing", I_LONGING, 0.08, "weak", (0.04, 0.14),
+                "思念最慢衰减——牵挂存续时间长", "calibrated", "2026-06-24")
+    vec.connect("social_battery", I_SOCIAL_BATTERY, 0.06, "weak", (0.04, 0.12),
+                "社交电量慢衰减——恢复慢的资源型维度", "calibrated", "2026-06-24")
+    vec.connect("mental_fatigue", I_MENTAL_FATIGUE, 0.18, "weak", (0.10, 0.25),
+                "精神疲劳较快衰减——休息可恢复", "calibrated", "2026-06-24")
 
     vec.build()
     register_mapper(vec)
@@ -102,37 +105,36 @@ def _build_internal_coupling() -> np.ndarray:
         source_labels=I_LABELS, target_labels=I_LABELS,
         description="内部态→内部态跨维度耦合（8×8 稀疏）",
     )
-    # 精力→压力↓
+    # 所有耦合为 trace/weak 级（保持动力学灵活但不过度同步）
     mapper.connect(I_ENERGY, I_STRESS, -0.05, "trace", (-0.10, -0.02),
                    "精力充沛→压力降低", "theory", "2026-06-21")
-    # 不安全感→压力↑
     mapper.connect(I_INSECURITY, I_STRESS, 0.10, "weak", (0.04, 0.16),
                    "不安全感→压力上升", "theory", "2026-06-21")
-    # 精力→孤独↓
     mapper.connect(I_ENERGY, I_LONELINESS, -0.05, "trace", (-0.10, -0.02),
                    "精力充沛→孤独感降低", "calibrated", "2026-06-21")
-    # 压力→孤独↑
     mapper.connect(I_STRESS, I_LONELINESS, 0.08, "trace", (0.03, 0.14),
                    "压力→孤独感", "theory", "2026-06-21")
-    # 孤独→不安↑
     mapper.connect(I_LONELINESS, I_INSECURITY, 0.12, "weak", (0.05, 0.18),
                    "孤独→不安全感上升", "theory", "2026-06-21")
-    # 压力→烦躁↑
     mapper.connect(I_STRESS, I_IRRITATION, 0.15, "weak", (0.08, 0.22),
                    "压力积累→易怒", "theory", "2026-06-21")
-    # 社交电量→烦躁↓
     mapper.connect(I_SOCIAL_BATTERY, I_IRRITATION, -0.08, "trace", (-0.14, -0.03),
                    "社交电量低→烦躁", "theory", "2026-06-21")
-    # 孤独→思念↑
     mapper.connect(I_LONELINESS, I_LONGING, 0.15, "weak", (0.08, 0.22),
                    "孤独→思念", "theory", "2026-06-21")
-    # 精力→社交电量↑
     mapper.connect(I_ENERGY, I_SOCIAL_BATTERY, 0.08, "trace", (0.03, 0.14),
                    "精力充沛→电量恢复", "calibrated", "2026-06-21")
-    # 压力→精神疲劳↑
     mapper.connect(I_STRESS, I_MENTAL_FATIGUE, 0.10, "weak", (0.04, 0.16),
                    "压力→精神疲劳", "theory", "2026-06-21")
-    # 社交电量→精神疲劳↓
+    # 新增 trace 级反馈边（06-24: 保持小量级以免过度同步）
+    mapper.connect(I_STRESS, I_ENERGY, -0.06, "trace", (-0.10, -0.02),
+                   "压力消耗精力——微量负反馈", "theory", "2026-06-24")
+    mapper.connect(I_LONELINESS, I_MENTAL_FATIGUE, 0.05, "trace", (0.02, 0.10),
+                   "孤独轻度消耗精神——打破共线", "calibrated", "2026-06-24")
+    mapper.connect(I_INSECURITY, I_LONGING, 0.05, "trace", (0.02, 0.10),
+                   "不安放大牵挂——微量", "theory", "2026-06-24")
+    mapper.connect(I_LONGING, I_LONELINESS, -0.04, "trace", (-0.08, -0.01),
+                   "思念作为希望缓解孤独——微量负反馈", "theory", "2026-06-24")
     mapper.connect(I_SOCIAL_BATTERY, I_MENTAL_FATIGUE, -0.10, "weak", (-0.16, -0.04),
                    "社交电量低→疲劳", "theory", "2026-06-21")
 
@@ -187,10 +189,9 @@ def _build_relationship_coupling() -> np.ndarray:
     mapper.connect(R_INTIMACY, R_AFFECTION, 0.03, "trace", (0.01, 0.06),
                    "亲密唤起熟悉感→好感微升",
                    "theory", "2026-06-23")
-    # 亲密→信任↓（末端反馈，亲密中的脆弱微蚀安全感）
-    mapper.connect(R_INTIMACY, R_TRUST_BOND, -0.01, "trace", (-0.03, -0.005),
-                   "亲密伴随脆弱暴露→安全感微降",
-                   "theory", "2026-06-23")
+    # 亲密→信任↓ 已移除（2026-06-25）：心理学上亲密与信任是共生关系
+    # (Altman & Taylor, 1973 社会渗透理论)，健康依恋中亲密不会削弱信任
+    # 原 -0.01 负边是为防止 intimacy 维度死胡同而硬加，无实证依据
 
     M = mapper.build_matrix(
         (R_SIZE, R_SIZE),
@@ -298,17 +299,19 @@ def _build_alpha_relationship() -> LinearMapping:
 # ═══════════════════════════════════════════════════════════════════
 
 def _build_beta_relationship() -> LinearMapping:
-    """β_rel: 0.0275 + anxiety*0.0075
+    """β_rel: 0.013 + anxiety*0.0075
 
     高依恋焦虑→对关系信号更敏感。
+    注：之前 β_rel=0.0275 配合 3 轮 buffer（每 3 轮更新一次）。
+    buffer 移除后 β_rel 减半至 0.013，每轮更新，保持长期积累速度。
     """
     from state import T_LABELS
     lm = LinearMapping("BETA_RELATIONSHIP", ["beta_rel"],
-                       "关系态刺激接受速率 (traits 调制)")
+                       "关系态刺激接受速率 (traits 调制，每轮更新)")
     lm.add_source_group("traits", T_LABELS)
 
-    lm.set_bias(0, 0.0275, (0.01, 0.05),
-                "基础关系刺激接受率（慢速）", "calibrated", "2026-06-21")
+    lm.set_bias(0, 0.013, (0.005, 0.025),
+                "基础关系刺激接受率（慢速，每轮更新）", "calibrated", "2026-06-24")
     lm.connect("traits", "attachment_anxiety", 0, 0.0075, "trace", (0.002, 0.015),
                "焦虑→对关系信号更敏感", "theory", "2026-06-21")
 
@@ -337,34 +340,9 @@ def _build_beta_base() -> WeightVector:
     return vec
 
 
-def _build_hyper_beta_gain() -> WeightVector:
-    """hyper→β 增益系数: 0.35
-
-    hyperactivation[i] 每增加 1.0，β_stim[i] 增加 0.35。
-    """
-    vec = WeightVector("HYPER_BETA_GAIN", ["gain"],
-                       "过度激活→β 增益（hyper 每 +1，β 上升 0.35）")
-    vec.connect("hyper_beta_gain", 0, 0.35, "moderate", (0.20, 0.50),
-                "hyper 放大刺激接受——核心机制", "theory", "2026-06-21")
-    vec.build()
-    register_mapper(vec)
-    return vec
-
-
-def _build_deact_suppression_ratio() -> WeightVector:
-    """deact 抑制比例: 0.5
-
-    乘法公式 β = max(ε, BASE+hyper·GAIN) · (1 - deact · RATIO) 中的 RATIO。
-    决定 deactivation 对刺激接受率的比例抑制上限（deact=1.0 时抑制 50%）。
-    替代旧加性公式中的 DEACT_BETA_GAIN=-0.15（该参数在乘法公式下已废弃）。
-    """
-    vec = WeightVector("DEACT_SUPPRESSION_RATIO", ["ratio"],
-                       "去激活抑制比例（乘法公式，deact=1 时 β 降低 50%）")
-    vec.connect("deact_suppression_ratio", 0, 0.5, "moderate", (0.30, 0.70),
-                "deact 比例抑制强度——核心机制", "theory", "2026-06-23")
-    vec.build()
-    register_mapper(vec)
-    return vec
+# ── HYPER_BETA_GAIN / DEACT_SUPPRESSION_RATIO 已移除（2026-06-24）──
+# 方案 B：防御不再调制 β，β_stim = BETA_BASE 为纯架构常数。
+# 参见 ../_dynamics.py 中的详细说明。
 
 
 # ═══════════════════════════════════════════════════════════════════
@@ -609,8 +587,7 @@ ALPHA_MAPPER = _build_alpha_internal()
 ALPHA_REL_MAPPER = _build_alpha_relationship()
 BETA_REL_MAPPER = _build_beta_relationship()
 BETA_BASE = _build_beta_base().values  # (7,)
-HYPER_BETA_GAIN = _build_hyper_beta_gain().values[0]  # scalar
-DEACT_SUPPRESSION_RATIO = _build_deact_suppression_ratio().values[0]  # scalar
+# HYPER_BETA_GAIN / DEACT_SUPPRESSION_RATIO — 已移除（方案 B, 2026-06-24）
 
 # Setpoint 映射器
 SETPOINT_MAPPER = _build_setpoint_mapper()
@@ -624,3 +601,101 @@ DECAY_REL_TIME_CURVE_K = _build_time_curve_k("RELATIONSHIP", 0.001, "关系时�
 DECAY_NEGATIVE_BOOST = _build_negative_decay_boost()
 INT_PERSONALITY_MOD = _build_internal_personality_mod()
 REL_PERSONALITY_MOD = _build_relationship_personality_mod()
+
+# ═══════════════════════════════════════════════════════════════════
+# Langevin 噪声 — 情感动力学扩散项（NEW 06-24）
+# 每维独立高斯噪声，打破维度间完美同步。
+# 心理学依据：Ornstein-Uhlenbeck 过程的情感建模标准做法
+# (Oravecz et al., 2009; MATE architecture, Lobozov 2026)
+# ═══════════════════════════════════════════════════════════════════
+
+def _build_noise_sigma() -> float:
+    """Langevin 噪声标准差。
+
+    每轮每维独立 N(0, σ²) 加性噪声。
+    σ=0.008 时 95% 噪声幅度在 ±0.016 内，不影响宏观趋势。
+    """
+    vec = WeightVector("NOISE_SIGMA", ["sigma"],
+                       "Langevin 噪声标准差——情感扩散项")
+    vec.connect("sigma", 0, 0.015, "trace", (0.005, 0.030),
+                "情感动力学 Langevin 噪声强度（σ=0.015 时 95% 噪声在 ±0.03 内）", "theory", "2026-06-24")
+    vec.build()
+    register_mapper(vec)
+    return vec.values[0]
+
+INTERNAL_NOISE_SIGMA = _build_noise_sigma()
+
+# ═══════════════════════════════════════════════════════════════════
+# 内部状态速度增益矩阵（SSM 值相关双速门控）
+# (8, 2) 矩阵，每维度正/负值取不同增益，实现情感不对称：
+#   column 0: gain when current_value >= 0
+#   column 1: gain when current_value < 0
+#
+# 心理学依据：Fading Affect Bias 的推广——
+# 正负情感状态变化速率不同，"上升"与"回落"不对称。
+# ═══════════════════════════════════════════════════════════════════
+
+def _build_speed_gain_matrix() -> np.ndarray:
+    """内部状态速度增益矩阵 (8, 2)，按变化方向选择增益。
+
+    列 0 = rising_gain（状态上升时，Δh ≥ 0 使用）
+    列 1 = falling_gain（状态下降时，Δh < 0 使用）
+    修复 2026-06-25：列名从 positive_gain/negative_gain 改为 rising_gain/falling_gain，
+    选择标准从 sign(h) 改为 sign(Δh)。"""
+    SPEED_LABELS = ["rising_gain", "falling_gain"]
+    mapper = WeightMapper(
+        "INTERNAL_SPEED_MATRIX",
+        source_labels=I_LABELS,
+        target_labels=SPEED_LABELS,
+        description="内部状态速度增益 (8,2) — 每维按变化方向 sign(Δh) 取不同增益",
+    )
+    # ── ENERGY (0) ──
+    mapper.connect(I_ENERGY, 0, 0.6, "weak", (0.4, 0.8),
+                   "精力充沛时变化适中", "theory", "2026-06-24")
+    mapper.connect(I_ENERGY, 1, 0.4, "weak", (0.3, 0.6),
+                   "精力耗尽时恢复慢", "theory", "2026-06-24")
+    # ── STRESS (1) ──
+    mapper.connect(I_STRESS, 0, 1.0, "none", (0.8, 1.0),
+                   "压力上升快——易紧张", "theory", "2026-06-24")
+    mapper.connect(I_STRESS, 1, 0.6, "weak", (0.4, 0.8),
+                   "压力回落慢——难放松", "theory", "2026-06-24")
+    # ── LONELINESS (2) ──
+    mapper.connect(I_LONELINESS, 0, 0.3, "weak", (0.2, 0.5),
+                   "孤独持久——不轻易消退", "theory", "2026-06-24")
+    mapper.connect(I_LONELINESS, 1, 0.5, "weak", (0.3, 0.7),
+                   "可缓慢积累孤独", "theory", "2026-06-24")
+    # ── INSECURITY (3) ──
+    mapper.connect(I_INSECURITY, 0, 0.3, "weak", (0.2, 0.5),
+                   "不安不易消退", "theory", "2026-06-24")
+    mapper.connect(I_INSECURITY, 1, 0.5, "weak", (0.3, 0.7),
+                   "不安可缓慢积累", "theory", "2026-06-24")
+    # ── IRRITATION (4) ──
+    mapper.connect(I_IRRITATION, 0, 1.0, "none", (0.8, 1.0),
+                   "烦躁快起——应激即时反应", "theory", "2026-06-24")
+    mapper.connect(I_IRRITATION, 1, 0.6, "weak", (0.4, 0.8),
+                   "烦躁慢消——平息需要时间", "theory", "2026-06-24")
+    # ── LONGING (5) ──
+    mapper.connect(I_LONGING, 0, 0.2, "trace", (0.1, 0.4),
+                   "思念极持久——深刻牵挂", "theory", "2026-06-24")
+    mapper.connect(I_LONGING, 1, 0.5, "weak", (0.3, 0.7),
+                   "思念可缓慢形成", "theory", "2026-06-24")
+    # ── SOCIAL_BATTERY (6) ──
+    mapper.connect(I_SOCIAL_BATTERY, 0, 0.6, "weak", (0.4, 0.8),
+                   "电量充足时消耗适中", "theory", "2026-06-24")
+    mapper.connect(I_SOCIAL_BATTERY, 1, 0.3, "weak", (0.2, 0.5),
+                   "电量耗尽时恢复慢", "theory", "2026-06-24")
+    # ── MENTAL_FATIGUE (7) ──
+    mapper.connect(I_MENTAL_FATIGUE, 0, 0.5, "weak", (0.3, 0.7),
+                   "疲劳难消——恢复缓慢", "theory", "2026-06-24")
+    mapper.connect(I_MENTAL_FATIGUE, 1, 0.7, "weak", (0.5, 0.9),
+                   "清醒→疲劳较容易", "theory", "2026-06-24")
+
+    M = mapper.build_matrix(
+        (I_SIZE, 2),
+        skip_spectral=True,       # 非方阵，无需谱半径验证
+        skip_orthogonality=True,  # 8×2 无正交含义
+    )
+    register_mapper(mapper)
+    return M  # np.ndarray(8, 2)
+
+INTERNAL_SPEED_MATRIX = _build_speed_gain_matrix()  # (8, 2)

@@ -23,6 +23,7 @@ from state import (
     R_AFFECTION, R_TRUST_BOND,
     S_EXPRESSIVENESS, S_WARMTH, S_SHARPNESS, S_SOFTNESS,
     S_ENTHUSIASM, S_RESTRAINT, S_VULNERABILITY, S_SIZE,
+    T_LABELS,
 )
 from ._utils import soft_clamp
 from ._surface_weights import (
@@ -30,6 +31,21 @@ from ._surface_weights import (
     SURFACE_FEEDBACK_MATRIX,
     SURFACE_FEEDBACK_NEG,
 )
+
+
+def _compute_surface_setpoint() -> np.ndarray:
+    """表面人格基线——长时间独处时的"静息脸"。
+
+    使用 SURFACE_MAPPER 在零内部状态 + 零关系 + 零外刺激下的投影，
+    即表面线性映射的偏置项。代表角色在中性状态下的默认表情。
+
+    返回 (7,) 数组，Δt→∞ 时 surface 收敛至此。
+    """
+    zeros = np.zeros(18, dtype=np.float64)  # [internal(8), relationship(3), outer(7)]
+    return SURFACE_MAPPER.compute(zeros)  # 偏置项之和
+
+# 模块加载时计算一次（人格固定）
+_SURFACE_SETPOINT = _compute_surface_setpoint()
 
 
 def _compute_surface_alpha(internal: np.ndarray) -> float:
@@ -77,10 +93,18 @@ def project_surface(
 
     # ── 惯性混合（含时间衰减） ──
     if prev_surface is not None:
-        # 时间衰减：prev_surface 向 raw 回归（表面"遗忘"效应）
+        # 时间衰减：prev_surface 回归
         if delta_hours > 0.01:
-            surface_decay = np.exp(-0.5 * delta_hours)
-            prev_adj = raw + (prev_surface - raw) * surface_decay
+            # 短间隔（<1h）：向 raw 回归（惯性衰减，半衰期 ~1.4h）
+            if delta_hours < 1.0:
+                surface_decay = np.exp(-0.5 * delta_hours)
+                prev_adj = raw + (prev_surface - raw) * surface_decay
+            # 长间隔（≥1h）：向人格基线回归（"静息脸"）
+            # 独处久了表面不应残留上轮内部状态，应归零到性格决定的基线
+            # 修复 2026-06-25 (#3)：之前缺失表面 setpoint，Δt→∞ 时 s→raw
+            else:
+                baseline_decay = np.exp(-0.3 * delta_hours)
+                prev_adj = _SURFACE_SETPOINT + (prev_surface - _SURFACE_SETPOINT) * baseline_decay
         else:
             prev_adj = prev_surface
 

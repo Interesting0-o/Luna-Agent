@@ -33,7 +33,7 @@ from state_engine._dynamics import (
 )
 from state_engine._dynamics_weights import (
     ALPHA_MAPPER, ALPHA_REL_MAPPER, BETA_REL_MAPPER,
-    BETA_BASE, HYPER_BETA_GAIN, DEACT_SUPPRESSION_RATIO,
+    BETA_BASE,
     DECAY_INTERNAL_LAMBDA, DECAY_INTERNAL_TIME_CURVE_K, DECAY_NEGATIVE_BOOST,
     INTERNAL_COUPLING, RELATIONSHIP_COUPLING, CROSS_SCALE_COUPLING,
     SELF_DECAY, DECAY_TARGETS, REL_SELF_DECAY,
@@ -99,39 +99,18 @@ class TestFixVerification:
                     # 这些维度是负值且低于 setpoint
                     pass  # 取决于具体值，不断言
 
-    def test_fix_beta_stim_multiplicative(self):
-        """验证乘法公式：deact 不再产生负 β，且保留抑制梯度。"""
-        print("\n=== [Fix-2] β_stim 乘法公式验证 ===")
-        scenarios = {
-            "secure   d=0.2 h=0.2": (0.2, 0.2),
-            "avoidant d=0.8 h=0.2": (0.8, 0.2),
-            "anxious  d=0.2 h=0.8": (0.2, 0.8),
-            "extreme-avoid d=1.0 h=0.0": (1.0, 0.0),
-            "extreme-anx   d=0.0 h=1.0": (0.0, 1.0),
-            "extreme-both  d=1.0 h=1.0": (1.0, 1.0),
-        }
-        print(f"  {'Scenario':>25} | {'raw (旧加性)':>12} | {'mult (新)':>10} | {'on/off_ratio':>12}")
-        print("-" * 65)
-        for name, (deact, hyper) in scenarios.items():
-            # 旧公式（已废弃）
-            old_raw = BETA_BASE[0] + hyper * HYPER_BETA_GAIN + deact * (-0.15)  # old additive formula
-            # 新乘法公式
-            beta_raw_inner = max(BETA_BASE[0] + hyper * HYPER_BETA_GAIN, 0.005)
-            new_mult = beta_raw_inner * (1.0 - deact * DEACT_SUPPRESSION_RATIO)
-            new_mult = max(0.005, min(new_mult, 0.35))
-
-            # 对比 secure 的抑制比例
-            secure_raw_inner = max(BETA_BASE[0] + 0.2 * HYPER_BETA_GAIN, 0.005)
-            secure_mult = max(0.005, min(secure_raw_inner * (1.0 - 0.2 * DEACT_SUPPRESSION_RATIO), 0.35))
-            ratio = new_mult / secure_mult if secure_mult > 0 else 0
-            print(f"  {name:>25} | {old_raw:>12.4f} | {new_mult:>10.4f} | {ratio:>11.4f}")
-
-            # 关键断言：乘法公式永不逆转刺激方向
-            assert new_mult >= 0.005, f"β 不应为负: {new_mult}"
-
-            # extreme-avoid 应该有最低的 β（但仍是正值）
-            if deact == 1.0 and hyper == 0.0:
-                assert new_mult > 0, f"extreme-avoid β={new_mult} 应为正"
+    def test_fix_beta_stim_constant(self):
+        """验证方案B：β_stim = BETA_BASE 常数，不再被防御调制。"""
+        print("\n=== [Fix-B] β_stim 常数化验证（方案 B, 2026-06-24）===")
+        print(f"  BETA_BASE = {BETA_BASE}")
+        print(f"  所有维度 β = {BETA_BASE[0]:.2f}（常数，不随防御变化）")
+        print()
+        print("  防御职责重新分配后：")
+        print("    hyper → 仅放大 inner_stimuli（感受强度）")
+        print("    deact → 仅抑制 outer_stimuli（表达压抑）")
+        print("    β     → 纯架构常数，不参与防御")
+        print()
+        assert np.allclose(BETA_BASE, 0.05), f"β 应为常数 0.05, 实际={BETA_BASE}"
 
     def test_fix_alpha_bounds(self):
         """验证 alpha 边界放宽后截断率大幅降低。"""
@@ -254,11 +233,7 @@ class TestPipelineIntermediateTrace:
         print(f"    hyper:  {profiles[1]}")
         print(f"    inner:  {inner}")
         print(f"    outer:  {outer}")
-        print(f"    β_stim 公式: β = max(ε, base+hyper·0.35) · (1-deact·{DEACT_SUPPRESSION_RATIO})")
-        beta_inner = np.maximum(BETA_BASE + profiles[1] * HYPER_BETA_GAIN, 0.005)
-        beta = beta_inner * (1.0 - profiles[0] * DEACT_SUPPRESSION_RATIO)
-        beta = np.clip(beta, 0.005, 0.35)
-        print(f"    β_stim: {beta}")
+        print(f"    β_stim: {BETA_BASE}（常数，方案 B）")
         print()
 
         # Step 2: 动力学
@@ -320,8 +295,7 @@ class TestPipelineIntermediateTrace:
             surface = project_surface(new_internal, new_rel, outer, None)
             alpha = ALPHA_MAPPER.compute(np.concatenate([traits, rel]))[0]
             alpha = max(0.05, min(0.40, alpha))
-            beta_inner = np.maximum(BETA_BASE + profiles[1] * HYPER_BETA_GAIN, 0.005)
-            beta = np.clip(beta_inner * (1.0 - profiles[0] * 0.5), 0.005, 0.35)
+            beta = BETA_BASE  # 常数（方案 B）
 
             print(f"\n  ── {name} ──")
             print(f"    α={alpha:.4f}, β_mean={beta.mean():.4f}, deact_mean={profiles[0].mean():.3f}, hyper_mean={profiles[1].mean():.3f}")
