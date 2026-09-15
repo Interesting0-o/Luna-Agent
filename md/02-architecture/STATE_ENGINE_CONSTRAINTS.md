@@ -1,6 +1,6 @@
-# 状态引擎约束框架 —— Lunar 宪法
+# 状态引擎约束框架 —— Luna 宪法
 
-> 本文件定义了 Lunar 状态引擎中所有参数、矩阵、映射关系必须遵守的约束。任何新矩阵或现有矩阵的修改，都必须通过全部约束检查才能合入。
+> 本文件定义了 Luna 状态引擎中所有参数、矩阵、映射关系必须遵守的约束。任何新矩阵或现有矩阵的修改，都必须通过全部约束检查才能合入。
 >
 > 违反约束的矩阵不允许存在于代码库中。
 
@@ -846,7 +846,7 @@ ConstraintRegistry.register_pipeline(assert_pipeline_jacobian_sparsity, pipeline
 
 | 版本 | 日期 | 作者 | 变更 |
 |------|------|------|------|
-| 3.1 | 2026-06-22 | Lunar | **修复约束①**：traits 从 surface 移除（通过 defense/dynamics 间接）；**修复约束④ traits→surface**；新增 Layer 4 surface→internal 反馈；新增 SURFACE_FEEDBACK_MATRIX 矩阵审计 |
-| 3.0 | 2026-06-21 | Lunar | 修复约束④（允许 internal→surface，禁止 outer_stimuli/traits→surface）；新增约束⑩刺激正交性保证；新增约束⑪状态格式化连续性 |
-| 2.0 | 2026-06-20 | Lunar | 新增约束⑨：全局雅可比稀疏——解决组合矩阵的路径爆炸问题 |
-| 1.0 | 2026-06-20 | Lunar | 初版——约束①-⑧定义 |
+| 3.1 | 2026-06-22 | Luna | **修复约束①**：traits 从 surface 移除（通过 defense/dynamics 间接）；**修复约束④ traits→surface**；新增 Layer 4 surface→internal 反馈；新增 SURFACE_FEEDBACK_MATRIX 矩阵审计 |
+| 3.0 | 2026-06-21 | Luna | 修复约束④（允许 internal→surface，禁止 outer_stimuli/traits→surface）；新增约束⑩刺激正交性保证；新增约束⑪状态格式化连续性 |
+| 2.0 | 2026-06-20 | Luna | 新增约束⑨：全局雅可比稀疏——解决组合矩阵的路径爆炸问题 |
+| 1.0 | 2026-06-20 | Luna | 初版——约束①-⑧定义 |

@@ -1,6 +1,6 @@
-# Lunar 状态引擎路线图、执行计划与测试报告
+# Luna 状态引擎路线图、执行计划与测试报告
 
-> 2026-06-23 | 06-23 修复批完成（反馈延迟 / rel_buffer / 级联双向 / 感知状态上下文 / 深度分析测试）
+> 2026-06-24 | 06-23 修复批完成（反馈延迟 / rel_buffer / 级联双向 / 感知状态上下文 / 深度分析测试）| 06-24 SSM 速度门控
 
 ---
 
@@ -151,7 +151,7 @@
 | **H** | 记忆系统集成 | **P1** | 1d | 无 | ⏳ 代码已写，需接入 graph |
 | **D** | OCC 拮抗对/刺激扩展 | P1 | 3d | 无 | ❌ 待方案 |
 | **E** | Trait 演化 v1 | **P2** | 5d | D（推荐） | ❌ 待方案 |
-| **F** | 双速 SSM v1 | **P2** | 2w | E | ❌ 待方案 |
+| **F** | 双速 SSM v1 | **P2** | 2w | E | ❌ 待方案（内部速度门控先行完成 ✅） |
 
 ### P1（短期优先 — 剩余项）
 
@@ -362,7 +362,7 @@ uv run pytest tests/test_decay.py -v -k "not TestVisualization"
 
 ## 五、开源生态可借鉴部分
 
-| Lunar 需求 | 可参考的开源项目 | 可复用的设计 |
+| Luna 需求 | 可参考的开源项目 | 可复用的设计 |
 |-----------|----------------|------------|
 | 情感正交维度 | **Bhava** (Rust) | PAD 3 维 + OCC 标签投影的设计模式 |
 | Trait 演化 | **Relic** | 置信度追踪 + 观察计数的渐进更新 |
@@ -420,3 +420,9 @@ uv run pytest tests/test_decay.py -v -k "not TestVisualization"
 | 关系级联双向 | `_dynamics_weights.py` | 参数修正 |
 | 感知状态上下文 | `perception.py` + `nodes.py` | 新功能 |
 | 深度分析测试 | `test_deep_analysis.py` | 新测试模块 |
+
+### 06-24 修复批 ✅
+
+| 项目 | 文件 | 类型 |
+|------|------|:----:|
+| SSM 速度门控 | `state.py` + `_dynamics.py` + `_dynamics_weights.py` | 新功能 |

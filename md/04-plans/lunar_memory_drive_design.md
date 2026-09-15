@@ -1,4 +1,4 @@
-# Lunar Agent: 记忆系统与内驱力系统综合设计文档
+# Luna Agent: 记忆系统与内驱力系统综合设计文档
 
 > **版本**: v1.0 | **日期**: 2026-06-23 | **状态**: 设计研讨
 > **范围**: 记忆系统架构选型、记忆注入/总结时机、内驱力与主动发言系统
@@ -8,7 +8,7 @@
 
 ## 执行摘要
 
-Lunar-Agent 当前的核心瓶颈在于两个相互关联的缺陷：**记忆系统只有存储和检索的骨架，缺乏完整的注入时机策略和情感驱动的检索逻辑**；**整个系统是纯反应式的，Agent 没有基于内在心理状态的主动发言能力**。本设计文档基于对 30+ 篇学术论文、开源方案（Mem0、Letta、MemGPT）和工业实践（Claude Dreaming、OpenClaw Dreaming）的系统调研，为 Lunar 提出一套统一的记忆-内驱力融合架构。
+Luna-Agent 当前的核心瓶颈在于两个相互关联的缺陷：**记忆系统只有存储和检索的骨架，缺乏完整的注入时机策略和情感驱动的检索逻辑**；**整个系统是纯反应式的，Agent 没有基于内在心理状态的主动发言能力**。本设计文档基于对 30+ 篇学术论文、开源方案（Mem0、Letta、MemGPT）和工业实践（Claude Dreaming、OpenClaw Dreaming）的系统调研，为 Luna 提出一套统一的记忆-内驱力融合架构。
 
 **核心结论**：
 
@@ -25,17 +25,17 @@ Lunar-Agent 当前的核心瓶颈在于两个相互关联的缺陷：**记忆系
 
 ### 1.1 研究综述：从 RAG 到 Agent Memory 的范式演进
 
-在讨论 Lunar 的记忆架构之前，必须澄清一个根本性的概念区分：**RAG（Retrieval-Augmented Generation）与 Agent Memory 是服务于不同目标的两种技术**。RAG 的设计目标是将外部文档知识注入 LLM 上下文，解决的是"模型不知道的事实"问题；Agent Memory 的设计目标是持久化 Agent 与用户的交互历史，解决的是"模型忘记了刚才发生的事"问题 [^19^][^21^]。
+在讨论 Luna 的记忆架构之前，必须澄清一个根本性的概念区分：**RAG（Retrieval-Augmented Generation）与 Agent Memory 是服务于不同目标的两种技术**。RAG 的设计目标是将外部文档知识注入 LLM 上下文，解决的是"模型不知道的事实"问题；Agent Memory 的设计目标是持久化 Agent 与用户的交互历史，解决的是"模型忘记了刚才发生的事"问题 [^19^][^21^]。
 
 2024-2026 年间，LLM Agent 的记忆架构经历了从简单到复杂的清晰演进轨迹。**第一代**是 MemGPT (Packer et al., 2023) 提出的 OS 类比架构，将 LLM 上下文管理比作虚拟内存分页，引入 Core/Recall/Archival 三层记忆 [^33^]。**第二代**以 Mem0 (Chhikara et al., 2025) 为代表，采用 LLM 驱动的原子事实提取 pipeline，将对话历史转化为结构化的事实条目存入向量数据库，在 LoCoMo 长对话基准上达到 94.4% 准确率，相比全上下文处理减少 91% 的延迟 [^31^][^74^]。**第三代**则向更丰富的表征发展：Zep 引入时序知识图谱追踪实体状态的演化 [^74^]；A-MEM 采用 Zettelkasten 方法自主建立记忆间的语义链接 [^75^]；EverMemOS 提出基于"印痕"（engram）生命周期的情节-语义分层模型 [^74^]。
 
-对于 Lunar 这类**角色扮演型情感陪伴 Agent**，记忆系统的核心需求与通用任务型 Agent 有本质差异。ENPMR-Bench [^22^] 的最新研究明确指出：在情感支持场景中，"仅依赖语义相似度的记忆检索是不够的"——Agent 需要基于用户的**潜在情感需求**主动检索记忆，而非被动响应用户的显式查询。该基准测试显示，即使最优的嵌入模型在情感记忆检索上 Recall@10 也仅有 46.41%，Top-1 准确率不足 10%，这揭示了情感维度在记忆检索中的关键作用 [^22^]。
+对于 Luna 这类**角色扮演型情感陪伴 Agent**，记忆系统的核心需求与通用任务型 Agent 有本质差异。ENPMR-Bench [^22^] 的最新研究明确指出：在情感支持场景中，"仅依赖语义相似度的记忆检索是不够的"——Agent 需要基于用户的**潜在情感需求**主动检索记忆，而非被动响应用户的显式查询。该基准测试显示，即使最优的嵌入模型在情感记忆检索上 Recall@10 也仅有 46.41%，Top-1 准确率不足 10%，这揭示了情感维度在记忆检索中的关键作用 [^22^]。
 
-### 1.2 Lunar Memory OS 架构：三层记忆 + 温度路径
+### 1.2 Luna Memory OS 架构：三层记忆 + 温度路径
 
-基于上述研究，Lunar 的记忆系统应采用**三层架构 + 温度路径**的设计，与你现有的 `MEMORY_SYSTEM.md` 草案保持一致但加以细化：
+基于上述研究，Luna 的记忆系统应采用**三层架构 + 温度路径**的设计，与你现有的 `MEMORY_SYSTEM.md` 草案保持一致但加以细化：
 
-![Lunar Memory OS 架构](lunar_memory_architecture.png)
+![Luna Memory OS 架构](Luna_memory_architecture.png)
 
 **三层记忆的职责划分**：
 
@@ -55,7 +55,7 @@ Lunar-Agent 当前的核心瓶颈在于两个相互关联的缺陷：**记忆系
 
 ### 1.3 情感相似检索：从 Bower 到 EASM
 
-Lunar 的核心差异化能力在于**基于心理状态的情感相似回忆**。这一功能有坚实的心理学基础：Bower (1981) 的经典实验表明，编码和检索时的情绪状态匹配能显著提升回忆准确率，其效果与语义相似度相当 [^42^]。后续研究进一步区分了**情绪一致性**（mood-congruent，回忆与当前情绪同性质的记忆）和**状态依赖性**（mood-dependent，编码与检索时的情绪状态匹配）两种机制 [^46^][^49^]。
+Luna 的核心差异化能力在于**基于心理状态的情感相似回忆**。这一功能有坚实的心理学基础：Bower (1981) 的经典实验表明，编码和检索时的情绪状态匹配能显著提升回忆准确率，其效果与语义相似度相当 [^42^]。后续研究进一步区分了**情绪一致性**（mood-congruent，回忆与当前情绪同性质的记忆）和**状态依赖性**（mood-dependent，编码与检索时的情绪状态匹配）两种机制 [^46^][^49^]。
 
 EASM（Emotion-Aware Semantic Memory）架构 [^43^] 提供了一个可直接采用的数学框架。该架构在 Qdrant 向量数据库中实现了**双索引**：每个记忆单元同时被语义内容和情感上下文索引。检索时的相关性得分公式为：
 
@@ -63,9 +63,9 @@ $$R(m) = \alpha \cdot sim_{sem}(m, q) + (1-\alpha) \cdot sim_{emo}(m, e)$$
 
 其中 $sim_{sem}$ 是记忆 $m$ 与查询 $q$ 的语义相似度，$sim_{emo}$ 是记忆 $m$ 的情感状态与当前情感状态 $e$ 的相似度，$\alpha \in [0,1]$ 是可调权重系数 [^43^]。
 
-对于 Lunar，这一公式可以**直接映射**到现有的代码结构：
+对于 Luna，这一公式可以**直接映射**到现有的代码结构：
 
-| EASM 参数 | Lunar 对应实现 | 说明 |
+| EASM 参数 | Luna 对应实现 | 说明 |
 |----------|---------------|------|
 | $sim_{sem}(m, q)$ | `search_by_embedding(query_text)` | 用户消息与记忆内容的语义相似度 |
 | $sim_{emo}(m, e)$ | `search_by_internal_state(current_internal)` | 记忆编码时的 `internal_state` 与当前状态的余弦相似度 |
@@ -74,11 +74,11 @@ $$R(m) = \alpha \cdot sim_{sem}(m, q) + (1-\alpha) \cdot sim_{emo}(m, e)$$
 
 **动态权重调整策略**：当检测到用户情绪剧烈波动（`ST_EMOTIONAL_WEIGHT > 0.7` 或 `I_STRESS / I_LONELINESS` 显著升高）时，自动降低 $\alpha$ 至 0.3-0.4，使情感相似度的权重提升。这与 State-Dependent Memory 的神经科学发现一致：情绪唤醒状态下，记忆检索更依赖编码时的情绪上下文 [^28^]。
 
-### 1.4 RAG vs 结构化记忆：Lunar 的选型决策
+### 1.4 RAG vs 结构化记忆：Luna 的选型决策
 
-你在 RAG 和 LLM Wiki 之间的摇摆，本质上是**非结构化语义检索**与**结构化知识组织**之间的权衡。基于调研，建议 Lunar 采用**"结构化情节记忆为主干，语义检索为辅助"**的混合策略，理由如下：
+你在 RAG 和 LLM Wiki 之间的摇摆，本质上是**非结构化语义检索**与**结构化知识组织**之间的权衡。基于调研，建议 Luna 采用**"结构化情节记忆为主干，语义检索为辅助"**的混合策略，理由如下：
 
-| 维度 | 纯 RAG 方案 | 纯 LLM Wiki 方案 | Lunar 混合方案 |
+| 维度 | 纯 RAG 方案 | 纯 LLM Wiki 方案 | Luna 混合方案 |
 |------|-----------|----------------|--------------|
 | **延迟** | 嵌入+检索 < 100ms | LLM 生成摘要 > 2s | 热路径 < 500ms，冷路径走 LLM |
 | **情感检索** | 仅语义相似，无情感维度 | 依赖 LLM 理解情感 | **状态向量直接索引情感** |
@@ -86,7 +86,7 @@ $$R(m) = \alpha \cdot sim_{sem}(m, q) + (1-\alpha) \cdot sim_{emo}(m, e)$$
 | **可解释性** | 低（黑盒相似度） | 中（结构化条目） | **高（状态向量可追踪）** |
 | **实现复杂度** | 低 | 高 | **中（逐步构建）** |
 
-Lunar 的 `MemoryNode` 已经内置了 `state_checkpoint` 字段（保存 `internal_state`、`relationship_state`、`surface_state` 三个向量），这实际上已经构建了**结构化情节记忆的骨架**。v1 阶段应聚焦完善这一骨架的检索和注入链路；v2 阶段再引入语义记忆层和 consolidation agent。
+Luna 的 `MemoryNode` 已经内置了 `state_checkpoint` 字段（保存 `internal_state`、`relationship_state`、`surface_state` 三个向量），这实际上已经构建了**结构化情节记忆的骨架**。v1 阶段应聚焦完善这一骨架的检索和注入链路；v2 阶段再引入语义记忆层和 consolidation agent。
 
 ---
 
@@ -96,7 +96,7 @@ Lunar 的 `MemoryNode` 已经内置了 `state_checkpoint` 字段（保存 `inter
 
 记忆系统的性能不仅取决于存储和检索的质量，更取决于**时机**——什么时候检索记忆注入对话上下文？什么时候将对话转化为持久记忆？什么时候进行后台整合？这三个问题的答案构成了记忆系统的"温度路径"。
 
-![记忆注入时机决策流程](lunar_memory_timing.png)
+![记忆注入时机决策流程](Luna_memory_timing.png)
 
 ### 2.2 热路径：每轮对话的记忆检索注入
 
@@ -175,7 +175,7 @@ def run_consolidation_pipeline():
     rebuild_embedding_index()
 ```
 
-**安全架构**：Letta 的 sleep-time agents 和 Kumiho 的 Dream State 都强调了 consolidation 的安全问题 [^73^][^83^]。Lunar 应实现：只读访问（consolidation agent 不能修改情节记忆的原始内容）、审计日志（记录所有合并/删除操作）、断路器（单批次处理时间超过阈值则中断）。
+**安全架构**：Letta 的 sleep-time agents 和 Kumiho 的 Dream State 都强调了 consolidation 的安全问题 [^73^][^83^]。Luna 应实现：只读访问（consolidation agent 不能修改情节记忆的原始内容）、审计日志（记录所有合并/删除操作）、断路器（单批次处理时间超过阈值则中断）。
 
 ---
 
@@ -183,11 +183,11 @@ def run_consolidation_pipeline():
 
 ### 3.1 研究综述：从被动响应到主动参与
 
-当前 Lunar 的架构是纯反应式的：所有心理刺激唯一来源于 `perception_node` 对用户消息的提取。这种状态在学术文献中被称为**"心理冻结"**——Agent 在对话间隔中没有任何内部活动。要让 Lunar 从"等待用户输入"转变为"可能主动发起对话"，需要引入**内部驱力生成层**。
+当前 Luna 的架构是纯反应式的：所有心理刺激唯一来源于 `perception_node` 对用户消息的提取。这种状态在学术文献中被称为**"心理冻结"**——Agent 在对话间隔中没有任何内部活动。要让 Luna 从"等待用户输入"转变为"可能主动发起对话"，需要引入**内部驱力生成层**。
 
 在认知架构领域，SOAR 和 ACT-R 都包含动机系统的扩展。SOAR 的问题空间和目标层次结构提供了持久状态管理，近年来的动机扩展引入了情感反馈机制 [^55^]。ACT-R 基于效用学习的求知欲模型（Nagashima et al., 2024）使用公式 $U = \alpha \times R(n) + (1-\alpha) \times U(n-1)$ 来建模动机的动态积累 [^55^]。
 
-在对话 Agent 领域，**Inner Thoughts 框架** [^30^] 是最接近 Lunar 需求的学术工作。该框架提出 AI 应在对话过程中并行生成一条"思想流"，利用长时记忆和工作记忆不断形成新的想法，然后基于**内在动机评分**决定是否参与对话。研究者通过对 24 名参与者的出声思维实验，提取了人类决定发言的 10 个高级启发式规则，并将其形式化为自动评估标准（相关性、信息缺口、情感共鸣等）[^30^]。
+在对话 Agent 领域，**Inner Thoughts 框架** [^30^] 是最接近 Luna 需求的学术工作。该框架提出 AI 应在对话过程中并行生成一条"思想流"，利用长时记忆和工作记忆不断形成新的想法，然后基于**内在动机评分**决定是否参与对话。研究者通过对 24 名参与者的出声思维实验，提取了人类决定发言的 10 个高级启发式规则，并将其形式化为自动评估标准（相关性、信息缺口、情感共鸣等）[^30^]。
 
 在工程实践层面，**ComPeer** [^97^] 是一个专门设计用于主动同伴支持的对话 Agent，它包含三个核心模块：Event Detector（从对话中提取用户事件）、Schedule（规划主动消息的时间和内容）、Reflection（每日反思用户状态以初始化当天的主动计划）。ComPeer 的 Schedule 模块采用随机化机制——当计划事件的"重要性值"大于随机数时才发送，以此平衡主动关怀与打扰 [^97^]。
 
@@ -229,11 +229,11 @@ def generate_internal_drive(internal_state, relationship_state, surface_state, t
 | ↑ I_INSECURITY | → ST_ABANDONMENT ↑ | 0.20 | 不安→被抛弃恐惧 |
 | ↑ R_INTIMACY | → ST_CLOSENESS ↑ | 0.18 | 亲密→更想靠近 |
 
-### 3.3 主动发言：Inner Thoughts 框架的 Lunar 适配
+### 3.3 主动发言：Inner Thoughts 框架的 Luna 适配
 
-![内驱力系统架构](lunar_drive_system.png)
+![内驱力系统架构](Luna_drive_system.png)
 
-将 Inner Thoughts 框架 [^30^] 适配到 Lunar 的架构中，形成**"触发 → 检索 → 思想形成 → 评估 → 参与"**五阶段主动发言管线：
+将 Inner Thoughts 框架 [^30^] 适配到 Luna 的架构中，形成**"触发 → 检索 → 思想形成 → 评估 → 参与"**五阶段主动发言管线：
 
 **阶段 1：触发（Trigger）**
 
@@ -285,7 +285,7 @@ $$M_{score} = \sum_{i} w_i \cdot criterion_i$$
 
 ### 3.4 Schedule 模块：基于 ComPeer 的主动计划
 
-引入 ComPeer [^97^] 的 Schedule 模块概念，为 Lunar 添加**时间感知的主动关怀能力**：
+引入 ComPeer [^97^] 的 Schedule 模块概念，为 Luna 添加**时间感知的主动关怀能力**：
 
 ```python
 # 伪代码：Schedule 模块
@@ -356,7 +356,7 @@ START → inject_system → perception → [proactive_trigger] → state_engine 
 
 ### 4.2 状态引擎协同：记忆检索作为内驱力的输入
 
-状态引擎与记忆系统的协同是 Lunar 架构的核心优势。具体协同方式：
+状态引擎与记忆系统的协同是 Luna 架构的核心优势。具体协同方式：
 
 **协同 1：状态向量驱动情感检索**
 
@@ -658,7 +658,7 @@ class ConsolidationAgent:
 
 | 问题 | 决策 | 理由 |
 |------|------|------|
-| RAG vs 结构化记忆？ | **结构化情节记忆为主，语义检索为辅** | Lunar 的 `state_checkpoint` 已天然支持结构化；情感检索需要状态向量 |
+| RAG vs 结构化记忆？ | **结构化情节记忆为主，语义检索为辅** | Luna 的 `state_checkpoint` 已天然支持结构化；情感检索需要状态向量 |
 | 何时检索记忆？ | **每轮对话热路径检索** | 延迟 < 500ms，零 LLM 调用 |
 | 何时形成记忆？ | **对话结束时温路径评估** | 基于显著性评分，避免垃圾记忆积累 |
 | 何时 consolidation？ | **会话结束 + 每日定时 + 数量阈值** | 多触发器确保及时整合 |
@@ -697,4 +697,4 @@ class ConsolidationAgent:
 
 ---
 
-**本设计文档整合了认知心理学（Bower 的 Mood-Dependent Memory、Panksepp 的 SEEKING 系统）、认知架构（SOAR/ACT-R 的动机扩展）、对话 Agent 研究（Inner Thoughts 框架、ComPeer、Generative Agents）和工业实践（Mem0、Letta、Claude Dreaming）的多维度研究成果，为 Lunar-Agent 的记忆系统和内驱力系统提供了一套理论上扎实、工程上可落地的综合方案。**
+**本设计文档整合了认知心理学（Bower 的 Mood-Dependent Memory、Panksepp 的 SEEKING 系统）、认知架构（SOAR/ACT-R 的动机扩展）、对话 Agent 研究（Inner Thoughts 框架、ComPeer、Generative Agents）和工业实践（Mem0、Letta、Claude Dreaming）的多维度研究成果，为 Luna-Agent 的记忆系统和内驱力系统提供了一套理论上扎实、工程上可落地的综合方案。**

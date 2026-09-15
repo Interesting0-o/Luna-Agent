@@ -1,12 +1,12 @@
-# Lunar 状态引擎架构
+# Luna 状态引擎架构
 
-> 2026-06-22 | Surface 重构完成（惯性更新+双向耦合+traits间接化）| 5 节点 LangGraph | defense-based 残差动力学 | 记忆系统已集成
+> 2026-06-24 | Surface 重构完成（惯性更新+双向耦合+traits间接化）| 5 节点 LangGraph | defense-based 残差动力学 | 记忆系统已集成 | SSM 速度门控
 
 ---
 
 ## 一、系统总览
 
-Lunar 是一个基于 LangGraph 的 AI 角色扮演引擎。用**计算心理学状态机**替代传统 prompt-based 角色扮演，核心是一个 Bowlby 依恋防御驱动的四阶段状态引擎。
+Luna 是一个基于 LangGraph 的 AI 角色扮演引擎。用**计算心理学状态机**替代传统 prompt-based 角色扮演，核心是一个 Bowlby 依恋防御驱动的四阶段状态引擎。
 
 ### 1.1 技术栈
 
@@ -300,7 +300,21 @@ $$
 h_t = \text{soft\_clamp}(h_{t-1} + \Delta t \cdot (\alpha \cdot \Delta_{\text{coupling}} + \Delta_{\text{stimulus}}),\; -1,\; 1)
 $$
 
-#### 关系状态更新
+**SSM 速度门控（2026-06-24 新增）：**
+
+$$
+h'_t = \text{soft\_clamp}(h_{t-1} + \Delta t \cdot \text{gain}[c] \odot (\alpha \cdot \Delta_{\text{coupling}} + \Delta_{\text{stimulus}}),\; -1,\; 1)
+$$
+
+其中 $\text{gain}[c]$ 是每维度按其速度分组 $c \in \{\text{FAST}, \text{MEDIUM}, \text{SLOW}\}$ 的增益系数。耦合项和刺激项作为一个整体被阻尼——"大质量"对所有力的加速度同等降低。
+
+| 速度分组 | 增益 | 维度 | 心理学依据 |
+|:--------:|:----:|------|-----------|
+| FAST | 1.0 | stress, irritation | 即时应激反应，不阻尼 |
+| MEDIUM | 0.6 | energy, social_battery, mental_fatigue | 资源型维度，趋势性变化 |
+| SLOW | 0.5 | loneliness, insecurity, longing | 累积心境型，不随单轮刺激剧变 |
+
+速度标签定义在 `state.py` 的 `INTERNAL_SPEED_CLASS` 中；增益系数通过 `_dynamics_weights.py` 的 `INTERNAL_SPEED_GAIN` WeightVector 管理（带 provenance）。
 
 **耦合速率 $\alpha_{\text{rel}} \in [0.005, 0.06]$：**
 
@@ -585,7 +599,7 @@ MemoryNode:
 | `state.py` | 状态向量索引常量 + 默认基线 + State TypedDict + Pydantic 兼容 |
 | `state_engine/_pipeline.py` | update_all / initialize_all 编排 |
 | `state_engine/_defenses.py` | Bowlby 防御剖面（逐维权重，刺激特异性） |
-| `state_engine/_dynamics.py` | 残差动力学 + setpoint 计算 |
+| `state_engine/_dynamics.py` | 残差动力学 + setpoint 计算 + SSM 速度门控 |
 | `state_engine/_surface.py` | 表面投影（惯性混合 + 表面→内部反馈） |
 | `state_engine/_surface_weights.py` | SURFACE_MAPPER (18→7 LinearMapping) + SURFACE_FEEDBACK_MATRIX (7×8 WeightMapper) |
 | `state_engine/_decay.py` | 时间衰减 + DecayConfig |
