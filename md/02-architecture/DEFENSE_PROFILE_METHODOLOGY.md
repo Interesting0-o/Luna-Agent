@@ -46,7 +46,7 @@ Step 1: 概念定义 → Step 2: 参数扫描实验 → Step 3: 独立性检验 
 - [ ] 是否有经过因子分析验证的测量工具（如 DSQ、ADQ、DMRS）？
 - [ ] 与 deactivation/hyperactivation 的理论关系是正交、相关但独立、还是从属？
 
-**1b. 在 Lunar 流水线中作用在哪？**
+**1b. 在 Luna 流水线中作用在哪？**
 
 防御剖面在 `apply_defenses` 中的数学操作决定了一个维度的唯一性：
 

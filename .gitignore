@@ -6,6 +6,8 @@ dist/
 wheels/
 *.egg-info
 langgraph.json
+.pytest_cache/
+.tmp
 
 # Virtual environments
 .venv
@@ -14,3 +16,6 @@ langgraph.json
 source
 .env
 CLAUDE.md
+
+# Experiment outputs (large, regenerable)
+experiment/outputs/

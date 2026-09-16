@@ -1,4 +1,4 @@
-# Lunar 状态引擎深度研究报告
+# Luna 状态引擎深度研究报告
 
 > 2026-06-21 | 基于 md/ 全部文档 + Web of Science 前沿论文 + GitHub 开源社区综合调研
 
@@ -6,7 +6,7 @@
 
 ## 一、系统现状全景
 
-Lunar 是一个基于 Bowlby 依恋理论的防御驱动型状态引擎，目前处于 **Phase 1 完成 → Phase 2 启动** 的过渡期。
+Luna 是一个基于 Bowlby 依恋理论的防御驱动型状态引擎，目前处于 **Phase 1 完成 → Phase 2 启动** 的过渡期。
 
 ### 1.1 已完成的工作
 
@@ -115,7 +115,7 @@ Arousal    = 0.15O + 0.30A − 0.57N
 Dominance  = 0.25O + 0.17C + 0.60E − 0.32A
 ```
 
-**对 Lunar 的启示：** OCC 的 22 种情感类型（joy/distress、hope/fear、pride/shame、admiration/reproach、love/hate、gratitude/anger 等拮抗对）可以直接映射到 Lunar 的刺激空间。当前 7 维刺激向量可扩展为：
+**对 Luna 的启示：** OCC 的 22 种情感类型（joy/distress、hope/fear、pride/shame、admiration/reproach、love/hate、gratitude/anger 等拮抗对）可以直接映射到 Luna 的刺激空间。当前 7 维刺激向量可扩展为：
 
 | 当前 7 维 | OCC 映射 | 建议扩展 |
 |-----------|---------|---------|
@@ -136,13 +136,13 @@ Dominance  = 0.25O + 0.17C + 0.60E − 0.32A
 - 情感真实性提升 2×（human evaluation）
 - 网络诊断显示互易的、中度聚类的、时间稳定的关系结构
 
-**对 Lunar 的启示：** 验证了 DUAL_TIMESCALE_SSM.md 的双速架构方向。Sentipolis 在 LLM agent 上的成功说明双速架构对角色真实感有直接可测量的提升。
+**对 Luna 的启示：** 验证了 DUAL_TIMESCALE_SSM.md 的双速架构方向。Sentipolis 在 LLM agent 上的成功说明双速架构对角色真实感有直接可测量的提升。
 
 ### 3.3 非线性 SSM 替代线性动力学
 
 **PLRNN (npj Digital Medicine, 2025)** — 分段线性 RNN 状态空间模型在情感轨迹预测上显著优于 VAR(1)、Kalman filter 和 Transformer。捕获了线性模型错过的**多稳态和相变**。
 
-结论：情感动力学本质上是非线性的。当前 Lunar 的线性残差方程 `h_t = h_{t-1} + dt·(αΔ_c + βΔ_s)` 在数学上是稳定的，但可能错过了真实情感系统的非线性行为（阈值触发、习惯化、对立过程反弹）。
+结论：情感动力学本质上是非线性的。当前 Luna 的线性残差方程 `h_t = h_{t-1} + dt·(αΔ_c + βΔ_s)` 在数学上是稳定的，但可能错过了真实情感系统的非线性行为（阈值触发、习惯化、对立过程反弹）。
 
 ### 3.4 MECoT: 马尔可夫情感链式推理
 
@@ -152,7 +152,7 @@ Dominance  = 0.25O + 0.17C + 0.60E − 0.32A
 - 人格加权的状态转移矩阵
 - 93.3% 情感准确率
 
-**对 Lunar 的启示：** 情感转移矩阵 + 人格权重的组合，本质上和 Lunar 的状态耦合矩阵 + trait 调制是同一思想。但 MECoT 用离散马尔可夫链 + 12 个离散状态做了简化，而 Lunar 用连续状态空间 + 微分方程做了更深层但更复杂的建模。
+**对 Luna 的启示：** 情感转移矩阵 + 人格权重的组合，本质上和 Luna 的状态耦合矩阵 + trait 调制是同一思想。但 MECoT 用离散马尔可夫链 + 12 个离散状态做了简化，而 Luna 用连续状态空间 + 微分方程做了更深层但更复杂的建模。
 
 ### 3.5 MATE: 确定性情感中间件
 
@@ -162,7 +162,7 @@ Dominance  = 0.25O + 0.17C + 0.60E − 0.32A
 - 对立过程（A-process → B-process 延迟反弹）
 - 双过程习惯化
 
-**对 Lunar 的启示：** MATE 的密度矩阵比 Lunar 的古典向量更丰富（可以建模叠加态），但 41500 行内核也说明复杂度急剧上升。对立过程和习惯化是 Lunar 完全缺失的——当前没有"迟滞反弹"机制。
+**对 Luna 的启示：** MATE 的密度矩阵比 Luna 的古典向量更丰富（可以建模叠加态），但 41500 行内核也说明复杂度急剧上升。对立过程和习惯化是 Luna 完全缺失的——当前没有"迟滞反弹"机制。
 
 ### 3.6 Scherer CPM 的计算实现
 
@@ -175,7 +175,7 @@ Relevance → Implication → Coping Potential → Normative Significance
 
 使用微分方程：状态激活值 [0,1] 或 [-1,1]，因果连接权重 ω ∈ [-1,1]，速度因子 η ∈ [0,1] 控制变化率。
 
-**对 Lunar 的启示：** Lunar 当前的 `user_stimuli` 实际上是一个隐式的评价输出（LLM 将用户输入映射到 7 维），但没有显式的评价过程。CPM 的 4 个 SEC 组提供了如何分解"评价→情感"过程的正式框架。
+**对 Luna 的启示：** Luna 当前的 `user_stimuli` 实际上是一个隐式的评价输出（LLM 将用户输入映射到 7 维），但没有显式的评价过程。CPM 的 4 个 SEC 组提供了如何分解"评价→情感"过程的正式框架。
 
 ### 3.7 依恋理论计算建模
 
@@ -185,7 +185,7 @@ Relevance → Implication → Coping Potential → Normative Significance
 
 **Petters (CME 2017)** — 自主智能体的依恋风格涌现：初始相同的智能体通过小随机波动→正反馈放大→分叉为安全型/不安全型。
 
-**对 Lunar 的启示：** Lunar 目前使用依恋理论作为设计的**描述性框架**（trait 中有 attachment_anxiety 和 avoidance），但没有实现**依恋系统本身的动力学**（内部工作模型的更新、依恋行为系统的激活/解除）。ANEX 的贝叶斯方法提供了一个可选的实现路径。
+**对 Luna 的启示：** Luna 目前使用依恋理论作为设计的**描述性框架**（trait 中有 attachment_anxiety 和 avoidance），但没有实现**依恋系统本身的动力学**（内部工作模型的更新、依恋行为系统的激活/解除）。ANEX 的贝叶斯方法提供了一个可选的实现路径。
 
 ---
 
@@ -197,7 +197,7 @@ Relevance → Implication → Coping Potential → Normative Significance
 |------|:-----:|---------|------|
 | **Soul Protocol** | ★★★★★ | OCEAN + 5 级记忆 + 躯体标记 + .soul 文件移植 | 最接近的"完整框架"对照 |
 | **Soul Engine (OpenSouls)** | ★★★★☆ | MentalProcesses 状态机 + WorkingMemory | LangGraph 结构的替代思路 |
-| **EloPhanto** | ★★★★☆ | PAD 基板 + OCC 标签 + 伊戈置信度 | 与 Lunar 设计哲学最接近 |
+| **EloPhanto** | ★★★★☆ | PAD 基板 + OCC 标签 + 伊戈置信度 | 与 Luna 设计哲学最接近 |
 | **Relic** | ★★★★☆ | 附着理论 + 置信度追踪 + 纵向建模 | 用户建模层可借鉴 |
 | **Sentimo** | ★★★☆☆ | Big Five + 6 情感 + 双内存 + 指数平滑衰减 | 模型简单但对快速迭代有用 |
 | **MECoT** | ★★★☆☆ | 12 维圆周模型 + 马尔可夫转移矩阵 | 离散情感标签的黄金标准 |
@@ -232,15 +232,15 @@ Relevance → Implication → Coping Potential → Normative Significance
 }
 ```
 
-与 Lunar 的差异：
-- Soul 使用 OCEAN + 二维情感（valence/arousal），Lunar 使用 8+6+7+10 维（更丰富但更复杂）
-- Soul 的躯体标记效应 = Lunar 的刺激 + 防御机制的合并
-- Soul 的 5 级记忆 = Lunar 的 3 级记忆的超集
-- Soul 的 `.soul` 文件可移植性优于 Lunar 的硬编码默认值
+与 Luna 的差异：
+- Soul 使用 OCEAN + 二维情感（valence/arousal），Luna 使用 8+6+7+10 维（更丰富但更复杂）
+- Soul 的躯体标记效应 = Luna 的刺激 + 防御机制的合并
+- Soul 的 5 级记忆 = Luna 的 3 级记忆的超集
+- Soul 的 `.soul` 文件可移植性优于 Luna 的硬编码默认值
 
 ### 4.3 EloPhanto 深度分析
 
-PAD 基板 + OCC 标签的设计与 Lunar 的 DUAL_TIMESCALE_SSM.md 高度一致：
+PAD 基板 + OCC 标签的设计与 Luna 的 DUAL_TIMESCALE_SSM.md 高度一致：
 
 ```python
 # EloPhanto 的 Affect 层结构（从公开文档重构）
@@ -254,7 +254,7 @@ class Affect:
         self.pad *= decay  # 自然衰减（快于 trait 变化）
 ```
 
-关键差异：EloPhanto 从 PAD 3 维投影到 OCC 标签，Lunar 从 7 维刺激独立计算。前者有维度优势（3 维保证正交性），后者有语义丰富度（7 维直接对应心理类别）。
+关键差异：EloPhanto 从 PAD 3 维投影到 OCC 标签，Luna 从 7 维刺激独立计算。前者有维度优势（3 维保证正交性），后者有语义丰富度（7 维直接对应心理类别）。
 
 ---
 
@@ -446,16 +446,16 @@ z_t = A·z_{t-1} + W·φ(z_{t-1}) + h_t + C·s_t
 # 其中 φ 是分段线性函数（ReLU-like）
 ```
 
-与 Lunar 当前残差方程的比较：
+与 Luna 当前残差方程的比较：
 ```
-Lunar:  h_t = h_{t-1} + dt·(α·A·h_{t-1} + β·B·s_t + γ·(μ - h_{t-1}))
+Luna:  h_t = h_{t-1} + dt·(α·A·h_{t-1} + β·B·s_t + γ·(μ - h_{t-1}))
 PLRNN:  z_t = A·z_{t-1} + W·ReLU(z_{t-1}) + C·s_t
 ```
 
 差异：
-- Lunar 的 coupling (A·h) ≈ PLRNN 的 A·z（线性部分）
-- Lunar 的 stimulus (B·s) ≈ PLRNN 的 C·s（输入）
-- Lunar **缺少** PLRNN 的 `W·φ(z)` 非线性项——这意味着 Lunar 无法产生分叉、多稳态等非线性行为
+- Luna 的 coupling (A·h) ≈ PLRNN 的 A·z（线性部分）
+- Luna 的 stimulus (B·s) ≈ PLRNN 的 C·s（输入）
+- Luna **缺少** PLRNN 的 `W·φ(z)` 非线性项——这意味着 Luna 无法产生分叉、多稳态等非线性行为
 
 **建议：** 如果未来要实现相变（如"暧昧→冷/热"分叉），需要添加非线性耦合项。当前 Phase 1 不需要。
 
@@ -525,7 +525,7 @@ A + E → 解决维度冗余 + 静态基线的组合根因 → 远期架构
 21. **GAMYGDALA** — https://ii.tudelft.nl/~joostb/gamygdala/
 22. **MECoT Code** — https://anonymous.4open.science/r/MECoT
 
-### Lunar 文档
+### Luna 文档
 23. `SPARSE_ANTAGONIST_ANALYSIS.md` — 稀疏化耦合与拮抗对方案分析
 24. `DEFENSE_PROFILE_INDEPENDENCE_AUDIT.md` — 防御剖面独立性审计
 25. `DUAL_TIMESCALE_SSM.md` — 双速状态空间模型研究

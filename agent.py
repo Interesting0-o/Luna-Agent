@@ -19,7 +19,7 @@ def tui_test():
     import json
     from langgraph.checkpoint.sqlite import SqliteSaver
     from langchain.messages import HumanMessage
-    connection = sqlite3.connect("./db/lunar.db", check_same_thread=False)
+    connection = sqlite3.connect("./db/Luna.db", check_same_thread=False)
     saver = SqliteSaver(connection)
     saver.setup()
 
@@ -41,7 +41,7 @@ def tui_test():
                 if msg.type == "human":
                     print(f"[User]: {msg.content}")
                 elif msg.type == "ai":
-                    print(f"[Lunar]: {msg.content}")
+                    print(f"[Luna]: {msg.content}")
 
     while True:
         print("[User]:", end="")
@@ -62,7 +62,7 @@ def tui_test():
         else:
             res = check_graph.stream({"messages": [HumanMessage(content=user_input)]}, config)  # type: ignore
 
-        print("[Lunar]:", end="")
+        print("[Luna]:", end="")
         for chunk in res:
             if isinstance(chunk, dict):
                 for val in chunk.values():

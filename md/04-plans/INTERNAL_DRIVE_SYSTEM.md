@@ -2,13 +2,13 @@
 
 > **版本**: 初稿 v1 | **日期**: 2026-06-22 | **状态**: 设计研讨
 >
-> 相关文档: [ARCHITECTURE.md](ARCHITECTURE.md) | [STATE_ENGINE_CONSTRAINTS.md](STATE_ENGINE_CONSTRAINTS.md) | [DEFENSE_PROFILE_METHODOLOGY.md](DEFENSE_PROFILE_METHODOLOGY.md) | [ROADMAP.md](ROADMAP.md)
+> 相关文档: [ARCHITECTURE.md](../02-architecture/ARCHITECTURE.md) | [STATE_ENGINE_CONSTRAINTS.md](../02-architecture/STATE_ENGINE_CONSTRAINTS.md) | [DEFENSE_PROFILE_METHODOLOGY.md](../02-architecture/DEFENSE_PROFILE_METHODOLOGY.md) | [ROADMAP.md](ROADMAP.md)
 
 ---
 
 ## 摘要
 
-Lunar 当前是纯反应式系统：所有心理刺激唯一来源于 `perception_node` 对用户消息的提取。没有内部驱力，角色在对话间隔中处于"心理冻结"状态。
+Luna 当前是纯反应式系统：所有心理刺激唯一来源于 `perception_node` 对用户消息的提取。没有内部驱力，角色在对话间隔中处于"心理冻结"状态。
 
 本方案在状态引擎中增加一个**内部驱力生成层（Internal Drive Layer）**，使角色能自主产生心理刺激——孤独时渴望连接、思念时不自觉靠近、独处太久开始焦虑——让状态引擎从"被动响应器"变为"自驱动情感系统"。
 
@@ -33,7 +33,7 @@ Bowlby (1969/1982) 的依恋理论本身就否定了"心理是纯反应式的"�
 
 Panksepp (1998) 在情感神经科学中识别出七个原始情感系统，其中 **SEEKING** 系统是最基础的**通用探索/觅食系统**，它产生好奇心、兴趣和期待——在无外部刺激时依然活跃。
 
-| 系统 | 功能 | 对应 Lunar 驱力 |
+| 系统 | 功能 | 对应 Luna 驱力 |
 |------|------|----------------|
 | **SEEKING** | 探索、期待、好奇 | 渴望连接、寻求认可 |
 | **FEAR** | 回避威胁 | 被抛弃恐惧（已有 ST_ABANDONMENT） |
@@ -81,7 +81,7 @@ D = 生理需求 × 习惯强度
 drive[t] = drive[t-1] + Δt · (accumulation_rate - decay_rate)
 ```
 
-这正是 Lunar 残差动力学 `h_t = h_{t-1} + Δt · (...)` 的形式。
+这正是 Luna 残差动力学 `h_t = h_{t-1} + Δt · (...)` 的形式。
 
 ---
 

@@ -114,12 +114,14 @@ def _build_input_influence() -> np.ndarray:
         origin="theory", reviewed="2026-06-21",
     )
 
-    # ── dependency: 被依赖 → 社交电量↓ 孤独↓ ──
+    # ── dependency: 被依赖 → 精神疲劳↓ 孤独↓ ──
+    # 修复 06-24: 原 social_battery(-0.10) 与 closeness 共享 2/3 目标(r=0.904)
+    # 改为 mental_fatigue(-0.08) → 与 closeness 仅共享 loneliness 一个目标
     mapper.connect(
-        source_idx=ST_DEPENDENCY, target_idx=I_SOCIAL_BATTERY,
-        value=-0.10, magnitude="weak", domain=(-0.15, -0.04),
-        rationale="被需要消耗社交能量 (Baumeister & Leary, 1995)",
-        origin="calibrated", reviewed="2026-06-21",
+        source_idx=ST_DEPENDENCY, target_idx=I_MENTAL_FATIGUE,
+        value=-0.08, magnitude="trace", domain=(-0.14, -0.03),
+        rationale="被需要→被需要的价值感减轻精神疲惫 (Ryff, 1989)",
+        origin="theory", reviewed="2026-06-24",
     ).connect(
         source_idx=ST_DEPENDENCY, target_idx=I_LONELINESS,
         value=-0.14, magnitude="weak", domain=(-0.20, -0.06),

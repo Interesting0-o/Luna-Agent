@@ -1,100 +1,138 @@
 # TODO
 
-> Lunar 项目待办事项与已知问题清单。
-> 对抗检验报告见 `md/ROADMAP.md`「测试报告」章节，soft_clamp 分析见 memory。
-> 双速 SSM 框架设计见 `md/AFFECTIVE_GEOMETRY_RESEARCH.md`「双速 SSM 深度分析」章节，有效自由度分析见下方。
+> Luna 项目待办事项与已知问题清单。
+> 更新于 2026-07-14。非线性动力学扩展与热力学会计已剥离至 `md/04-plans/THERMODYNAMIC_AFFECTIVE_MODEL.md`。
+> v1.0 聚焦线性 ODE + soft_clamp + 时间衰减 框架内的精确修复。
+> 完整分析见 `md/STATE_ENGINE_REVIEW_20260625.md`（待生成）。
 
 ---
 
 ## 已完成 ✅
 
-- [x] 移除 HiddenState 层（已并入 Gate Control + Surface Projection）
-- [x] 移除 SocialSignals / InteractionImpact 中间层（perception 直接输出 7 维 StimulusVector）
-- [x] 状态引擎解耦为独立包 `state_engine/`
-- [x] 图编排层解耦为 `graph/` 包
-- [x] Prompt 数据外置为 `prompts/` 包
-- [x] **Defense Profiles 合并**：(3,7) 矩阵 → (2,7) deactivation/hyperactivation，基于 Bowlby 二分法
-- [x] **残差式状态更新**：`h_t = h_{t-1} + Δt·(α·Δ_coupling + β·Δ_stimulus + γ·Δ_homeostatic)`
-- [x] **稳态恢复内建到动力学**：旧 `apply_decay` 废弃，由 γ·(setpoint−h) 替代
-- [x] **表面投影软阈值化**：硬阈值分支改为 sigmoid 连续贡献
-- [x] **时间感知衰减组件**：新建 `_decay.py`，以真实时间戳 + 指数衰减 + 人格调制驱动离线状态恢复
-- [x] **死代码清理**：移除旧 `_decay.py`、`PERSONALITY_BIAS_C`、`validate_matrices`、decay 常量
-- [x] **浪漫张力近乎冻结修复**：B 矩阵加 3 条入边（validation/dependency/emotional_weight→tension）+ 耦合 2 条入边（affection/trust→tension），单轮响应 0.0084→0.0124（+48%）
-- [x] **SELF_DECAY 隐性税修复**：统一 0.15→每维度独立数组（0.10-0.12），tax 总值 internal↓22%、relationship↓28%
-- [x] **跨尺度耦合缺失修复**：`update_relationship_state` 新增 `current_internal` 参数，5 条内→关耦合规则（stress→trust/safety、loneliness→tension、energy→affection、insecurity→dependency）
-- [x] **β 逐维度解耦**：`hyper.mean()` 全局标量→`(7,)` 逐刺激维度向量，保留防御剖面在具体刺激类型上的选择性
-- [x] **social_battery 结构性修复**：B 矩阵增 validation→+0.15、closeness→-0.10→+0.08；新增 energy→social_battery 耦合；DECAY_TARGETS[I_SOCIAL_BATTERY]=0.20
-- [x] **表面层 stress 去放大**：stress 从 warmth/sharpness/restraint 分散出口，解除 4.5×放大；fatigue 系数 0.30→0.15
+- [x] **约束② StimulusMetadata** — 感知节点返回 confidence/source/decay_modulator/timestamp 结构
+- [x] **约束⑪ StateFormatter 连续投影** — `_desc()` 替换为 9 区连续投影，消除硬阈值离散
+- [x] **decay_modulator 持久化 + 时间衰减接入管线** — `state_engine_node` 先 `apply_time_decay` 再 `update_all`
+- [x] **表面惯性时间衰减** — `project_surface` 新增 `delta_hours`，`prev_surface` 向 raw 回归
+- [x] **表面负值反馈** — `SURFACE_FEEDBACK_NEG` 矩阵处理压抑/伪装的代谢成本
+- [x] **State Formatter 重写**：`_desc()` 连续投影替代 5 级硬阈值 ✅ 06-22
+- [x] **参数集中管理**：250+ 参数通过 WeightMapper/WeightVector/LinearMapping 管理，全 provenance
+
+### 06-23 修复批 ✅
+- [x] **非对称衰减正负判断** — `deviation < 0` → `(current < 0) & (deviation < 0)`（`_decay.py`）
+- [x] **α/α_rel 裁剪边界放宽** — α: [0.02,0.35]→[0.05,0.40]; α_rel: [0.005,0.06]→[0.005,0.08]
+- [x] **β_stim 乘法公式** — 加性→乘法 `β = max(ε, BASE+hyper·GAIN) · (1-deact·0.5)`
+- [x] **vulnerability 入边增强** — 新增 stress(+0.10) + energy(-0.05) → vulnerability
+- [x] **表面→内部反馈因果延迟** — surface[t-1] 影响 internal[t] 而非同轮即时反馈
+- [x] **双速 rel_buffer** — 关系态每 3 轮更新一次（已移除，改为 β_rel 减半 + 每轮更新）
+- [x] **B 矩阵秩验证** — 新增 `test_matrices.py` 中 `TestMatrixRank`（INPUT_INFLUENCE_B 秩≥6, REL 秩=3）
+- [x] **关系级联双向** — 新增 intimacy→affection(+0.03) + intimacy→trust_bond(-0.01)
+- [x] **感知层注入状态上下文** — internal/relationship 摘要注入 perception prompt
+- [x] **深度分析测试** — 新增 `test_deep_analysis.py`（20 项追踪测试）
 
 ---
 
-## P0 — 阻塞性
+## ⚠️ 待检验（已知未修复，小影响）
 
-- [ ] **状态空间维度严重冗余** 🔴：PCA 分析显示 14 维状态空间有效自由度仅 6 维（95% 方差），8 维贡献 < 1% 方差。
-  - **数据**：irritation×mental_fatigue r=+0.997，familiarity×romantic_tension r=+0.997，familiarity×dependency r=+0.986，前 2 个主成分解释 73% 方差
-  - **根因**：耦合矩阵过密，维度间全协同无拮抗；关系维度 6 维全部正相关同步运动；pride 锁死在 Traits 不是动态状态
-  - **影响**：心理表达力 ≈ 6 维而非 14 维；关系维度实际只编码 2-3 件事；longing/insecurity 独立方差 < 10%
-  - **方向**：见 `md/AFFECTIVE_GEOMETRY_RESEARCH.md` 双速分解（PAD 正交基底 + 慢速依恋关系）或稀疏化耦合
-- [ ] State Formatter 重写：当前 `_desc()` 将连续状态离散化为 5 级文本描述，破坏 State Engine 连续性。
-- [x] 时间驱动衰减：~~引入真实时间戳机制~~ ✅ 已完成。
-- [ ] **硬编码参数过多**：State Engine 总计 ~190 个手工数值，详见下方「P1 → 参数管理」。
+- [ ] **时间衰减渐近收敛** 🟢：
+  - 理论残余 exp(-λ_base/k) 最大 9.07%（longing 维度），实际影响很小（Δt>72h 已<5%）
+  - if 分支在 Δt=168h 处的非平滑仅 0.13% 突变
+  - **评估**：影响低，待大版本时用 γ<1 公式级修复
 
-## P1 — 重要
-
-- [ ] **soft_clamp 语义决策** 🟡：三个方向待选 — A) 全局 sigmoid 映射（需全引擎重校准）；B) `high + t·tanh(...)` + `np.clip` 兜底（改动最小）；C) 拆成 `soft_clamp`（数值安全网）+ `psychometric_scale`（心理测量接口）两个函数。详见 `memory/soft-clamp-redesign.md`。
-- [ ] 感知层注入状态上下文：把 `internal_state` / `relationship_state` 摘要拼入 perception prompt，避免只看到最近 4 条消息。
-- [ ] 矩阵权重外部化：详见下方「参数问题详细分析」。
-- [ ] 感知上下文扩展：将上下文窗口从 4 条扩展到 12~20 条，必要时结合向量检索。
-- [ ] 感知输出值域校验：增加对 `user_stimuli` 结果 ∈ [0,1] 的验证，防止 LLM 越界输出。
-- [ ] LLM 输出-状态对齐校验：建立评估闭环，验证回复是否真实反映 `state_description`。
-- [ ] Surface 闭环增益 > 1.0：98% 试验中 Surface→Stimuli→Surface 增益 > 1.0（均值 1.14×），信号不衰减反放大。需审查默认耦合矩阵 W 的谱范数。
-- [ ] 防御剖面无法极端化：deact/hyper 卡在 [0.34, 0.62]，Bowlby 四种模式均无法调出。需调整 sigmoid 偏移/权重。
-- [ ] 往返迟滞：先正向再反向刺激 → 状态被推得更远而非抵消。系统无"抵消"机制。
+- [ ] **状态空间维度冗余（旧）** 🔴：PCA 14维有效自由度仅6维。B矩阵去相关化已完成（密度28.6%），但全局雅可比密度19.9%，仍偏高。
 
 ---
 
-**参数问题详细分析:**
+## 🔴 P0 — 数学结构缺陷（公式错误或遗漏，直接影响行为正确性）
 
-State Engine 共有约 **190 个硬编码数值参数**，分布在 5 个模块:
+> 完整热力学会计框架（含 #0b 熵增代价、#0c 总势能约束）已移入 `md/THERMODYNAMIC_AFFECTIVE_MODEL.md`，待 v2.0 非线性阶段设计。
 
-| 模块 | 参数数 | 类型 |
-|------|--------|------|
-| `_matrices.py` | 38 | 耦合矩阵非零元、谱归一化阈值 |
-| `_defenses.py` | 52 | deact/hyper 基线×特质系数、全局调制、sigmoid 阈值 |
-| `_dynamics.py` | 41 | α/β/γ 速率系数、setpoint 偏移 |
-| `_surface.py` | 33 | 内部→表面基线系数、刺激贡献、特质修饰 |
-| `_decay.py` | 26 | λ_base 值、personality_mod 系数 |
+### #0a 刺激驱动无能量约束（违反热力学第二定律——无源放大）
+- **位置**：`state_engine/_dynamics.py:108-110`（`delta_stimulus` 直接无约束加性映射）
+- **物理问题**：系统可凭空产生高振幅情绪——连续 σ=1.0 刺激可将 Irritation/Stress 线性推到 +1.0，不消耗任何"系统内部燃料"
+- **真实物理/心理**：大脑产生强烈情绪需消耗葡萄糖和神经递质（多巴胺、肾上腺素），是"化学能→电能→情绪势能"的转化过程。社交电量低时情绪振幅必须被严重钳制——极度疲劳的人连发火都没力气
+- **修正思路**：刺激驱动项乘以当前可用能量系数 `Energy_factor = (1 + h[Energy]) / 2`，低电量时外界再大刺激也掀不起浪
 
-**影响:**
+### #1 SSM 速度门控的方向判断逻辑错误
+- **位置**：`state_engine/_dynamics.py:119-121`
+- **问题**：`np.where(current >= 0, ...)` 按当前值符号选增益，但"快起慢消"应基于变化方向 `sign(Δh)` 而非 `sign(h)`
+  - 当前 h>0 且 Δh<0（正在消退）→ 误用正区增益（快），违背"慢消"
+  - 当前 h<0 且 Δh>0（正在上升）→ 误用负区增益（慢），违背"快起"
+- **修正思路**：改为 `np.where(delta >= 0, rising_gain, falling_gain)`，列名改为 `rising_gain`/`falling_gain`
+- **关联权重**：`_dynamics_weights.py:641` `SPEED_LABELS = ["positive_gain", "negative_gain"]`
 
-1. **标定脆弱** — 190 个参数通过 inner→outer→dynamics→surface→LLM 的链式传递相互耦合。
-2. **无法验证** — 每个系数背后是心理学假设，无实证数据支撑。
-3. **单角色过拟合** — 所有参数为月下誓约调校，换角色需重调 120+/190 个参数。
-4. **量级不统一** — 系数范围从 0.05 到 0.55（11× 差异）。
+### #2 Δt 双重身份谬误（积分步长 = 物理时间）
+- **位置**：`state_engine/_dynamics.py:64,130`（`dt: float = 1.0` 硬编码）、`_pipeline.py:107-116`（未传 dt，始终用默认值 1.0）
+- **问题**：
+  - 动力学中使用 `h_t = h_{t-1} + dt × Δ`，此处 dt 被当作积分步长（微积分 dt）
+  - 时间衰减中 Δt 是真正的对话间隔物理时间
+  - 若传实际时间给 dt，刺激驱动会被放大成千上万倍溢出
+  - 若 dt=1.0，则刺激响应与间隔时长无关，物理错误
+- **修正思路**：刺激驱动不应乘 Δt（心理冲击是毫秒级即时响应），仅衰减乘 Δt
 
-**解决路径:**
+### #3 表面状态无 Setpoint（基线回归）
+- **位置**：`state_engine/_surface.py:78-91`
+- **问题**：长时间间隔时 s → raw（内心投影），而非归零。h 和 r 都有人格基线，s 没有
+- **场景**：独处一周后内心已平静，但表面残留 Vulnerability/Longing 映射
+- **修正思路**：为 s 引入人格基线（默认中性），Δt→∞ 时 s → neutral
 
-| 优先级 | 方案 | 效果 | 代价 |
-|--------|------|------|------|
-| **A (近期)** | 外置为 JSON/YAML 配置 | 换角色只需改配置 | 低 |
-| **B (近期)** | 减少参数数量 | 合并冗余维度 | 中 |
-| **C (中期)** | 结构约束替代手写 | 低秩映射函数 | 高 |
-| **D (远期)** | LLM 驱动参数生成 | 人设自动标定 | 中 |
-
----
-
-## P2 — 增强
-
-- [ ] 记忆系统：短期情景记忆 + 长期摘要记忆 + 向量检索/关系记忆。
-- [ ] 用户心理模型：独立维护用户人格、情绪和偏好，实现 Theory of Mind。
-- [ ] 目标/动机系统：建模角色主动目标和行动倾向。
-- [ ] 特质演化：让 `traits` 随长程互动缓慢更新。
-- [ ] 刺激维度扩展：增加 `anticipation`、`guilt`、`disappointment`、`gratitude` 等。
-- [ ] FastAPI 服务化：完善 `main.py`，支持会话管理、多用户隔离。
-- [x] G_LEAKAGE 清理：已移除。
-- [x] REL_STATE_COUPLING_A 谱半径：已替换为命名耦合规则 + SELF_DECAY。
-- [x] longing / romantic_tension 响应过弱：已修复（浪漫张力 0.0084→0.0124，longing 0.0206→0.0353）
+### #4 防御剖面操作不消耗系统资源
+- **位置**：`state_engine/_defenses.py:117-131`
+- **问题**：高 a（内心翻涌）+ 高 d（表面压抑）在 s=0（面无表情）时，反馈 Δh=0，系统认为无能耗
+- **场景**："面无表情但内心惊涛骇浪"——现实中消耗巨大，模型中零成本
+- **修正思路**：防御剖面本身应产生能量成本（独立于表面反馈通路）
 
 ---
 
-*最后更新：2026-06-20*
+## 🟠 P1 — 心理学效度缺陷（行为与真实情绪/认知规律不符）
+
+### #5 管线顺序违反拉扎勒斯认知评价理论
+- **位置**：`state_engine/_pipeline.py:94-112`（当前顺序：反馈→防御→动力学→表面）
+- **问题**：反馈先于防御，但认知评价（Appraisal）始终优先于生理反馈。人先判断"有没有威胁"（防御），然后才允许面部反馈信号调情绪
+- **场景**：强扯微笑时，若防御判断"社交危险"，微笑的反馈信号根本来不及让你变开心
+- **修正思路**：顺序应为 ①防御→④反馈→②动力学，或 ①→②→④→③（反馈在动力学之后）
+
+### #6 表达成本倒置（压抑 < 表达）
+- **位置**：`state_engine/_surface_weights.py:218-224`（SURFACE_FEEDBACK_MATRIX ③）
+- **问题**：当前 EXPRESSIVENESS→ENERGY -0.06（表达消耗大），RESTRAINT→MENTAL_FATIGUE +0.04（压抑消耗小）
+- **心理学依据**：Richards & Gross (2000) 实验证明压抑（Suppression）比表达消耗大得多，因需持续动用前额叶抑制冲动
+- **场景**：强忍怒火一天→虚脱；开怀大笑一天→只是脸酸
+- **修正思路**：交换量级，压抑成本应数倍于表达成本
+
+### #7 Intimacy → TrustBond 负反馈违反社会渗透理论
+- **位置**：`state_engine/_dynamics_weights.py:192-195`
+- **问题**：Intimacy → TrustBond: -0.01，亲密增加时信任微降
+- **心理学依据**：Altman & Taylor (1973) 社会渗透理论中，亲密与信任是共生关系。健康依恋中亲密只会加强信任
+- **场景**：伴侣越交心→信任越牢不可破。该 -0.01 是为数学稳定杜撰的心理谬误
+- **修正思路**：移除负向边（或转为 PTSD 模式特例）
+
+---
+
+> **以下 P1 项已移入 `md/THERMODYNAMIC_AFFECTIVE_MODEL.md`，待 v2.0 非线性阶段设计：**
+> - #8 压力→易怒倒U型（Yerkes-Dodson）
+> - #9 状态依赖耦合（交叉项）
+> - #10 防御非线性放大
+> - #11 关系动力学振荡（二阶项）
+> - #12 表面相变与滞后回线
+
+## 🟡 P2 — 架构增强
+
+- [ ] **权重生成化 Phase 2**：从"文档化硬编码"升级到"生成化权重（Generator 对象，修改原理参数自动重计算）"。
+- [ ] **记忆系统集成**：`memory_inject_node` + `memory_summery_node` 接入 `graph/_builder.py`。
+- [ ] **特质演化（重新设计）**：不再作为独立子系统，而是由记忆库导出的函数。见 `md/TRAIT_FROM_MEMORY.md`。
+- [ ] **刺激维度扩展**：增加 `anticipation`、`guilt`、`disappointment`。
+- [ ] **UserModel / Theory of Mind**：独立用户心理剖面。
+- [ ] **FastAPI 服务化**：完善 `main.py`。
+- [ ] **双速缓冲区（已实现）**
+
+## P3 — 代码质量
+
+- [x] **速度增益 (8, 2) 矩阵化**：删除 `INTERNAL_SPEED_CLASS`(索引数组) + `INTERNAL_SPEED_GAIN`(查找表) 两层间接，改用 `INTERNAL_SPEED_MATRIX` (8, 2) WeightMapper。每维独立正/负值增益，实现情感不对称（Fading Affect Bias）。去掉 `state.py` 中的 `SPEED_FAST/MEDIUM/SLOW`、`SPEED_LABELS`、`INTERNAL_SPEED_CLASS`。✅
+
+- [x] **β 常数化（方案 B, 2026-06-24）**：防御不再调制 β_stim。HYPER_BETA_GAIN 和 DEACT_SUPPRESSION_RATIO 已移除，β = BETA_BASE（常量 0.05）。防御路径重新分配：hyper 仅放大 inner_stimuli（感受强度），deact 仅压抑 outer_stimuli（表达压抑），β 回归纯架构速率常数。因果链从"乘法级联"变为"一条直线"。
+
+---
+
+## 已归档（见 md/ROADMAP.md）
+
+- 权重外部化 Phase 1 → 已完成（WeightMapper 替代裸数值）
+- 内部驱力系统 → 见 `md/INTERNAL_DRIVE_SYSTEM.md`

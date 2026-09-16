@@ -1554,7 +1554,7 @@ otel = [
 ]
 
 [[package]]
-name = "lunar"
+name = "Luna"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

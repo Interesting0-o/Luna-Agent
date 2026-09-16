@@ -2,6 +2,8 @@
 
 > **报告日期**: 2026-06-22 | **用例数**: 249 | **通过率**: 100% (242/242, 7 skipped) | **执行时间**: 133s
 >
+> **当前快照** (06-24): 264 passed, 7 skipped — SSM 速度门控新增（`INTERNAL_SPEED_CLASS` + `INTERNAL_SPEED_GAIN`），FAST/MEDIUM/SLOW 三级阻尼。见 `ROADMAP.md` 06-24 修复批。
+>
 > 本版变更：Hyperactivation 从纯秩-1 拆分为**人格基线（秩-1, traits+rel）** + **状态调制（HYPER_STATE_MODULATION）**。RELATIONSHIP_COUPLING 从 66.7% 密度压缩至 22.2%（约束⑥合规）。新增参数灵敏度分析模块（12 项测试）。**修复约束②（StimulusMetadata）和约束⑪（formatter 连续投影）**。全管线 242 项通过。
 
 ---

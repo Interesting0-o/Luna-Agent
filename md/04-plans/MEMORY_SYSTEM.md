@@ -8,7 +8,7 @@
 
 ### 1.1 要解决的问题
 
-当前 Lunar 的角色是"金鱼脑"——每轮对话只看最近 4 条消息（perception context window），对过去的互动毫无记忆。`relationship_state` 虽然会跨轮累积，但那只是 6 个浮点数，不包含任何**情节内容**。
+当前 Luna 的角色是"金鱼脑"——每轮对话只看最近 4 条消息（perception context window），对过去的互动毫无记忆。`relationship_state` 虽然会跨轮累积，但那只是 6 个浮点数，不包含任何**情节内容**。
 
 | 环节 | 做什么 | 状态 |
 |------|--------|:----:|
@@ -27,9 +27,9 @@
 
 ---
 
-## 二、三层记忆架构（Lunar Memory OS）
+## 二、三层记忆架构（Luna Memory OS）
 
-参考 Letta 的 OS 启发式三层设计，结合 Lunar 的心理状态引擎特点：
+参考 Letta 的 OS 启发式三层设计，结合 Luna 的心理状态引擎特点：
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -323,10 +323,10 @@ LLM 参与度
 
 ### 10.3 参考项目
 
-| 项目 | 类型 | 对 Lunar 的参考 |
+| 项目 | 类型 | 对 Luna 的参考 |
 |------|------|---------------|
 | FAtiMA | 学术情感架构 | OCC 评价 + 自传体记忆 + 动机层 + ToM |
-| Letta/MemGPT | 三层记忆 | Core/Recall/Archival 启发 Lunar Memory OS |
+| Letta/MemGPT | 三层记忆 | Core/Recall/Archival 启发 Luna Memory OS |
 | LangMem | LangChain 官方 | Semantic/Episodic/Procedural 三层 + ReflectionExecutor |
 | Mem0 | 语义记忆 | 自动去重、向量存储用户事实与偏好 |
 | Zep | 时序+语义 | 时间知识图谱 Graphiti，PostgreSQL |

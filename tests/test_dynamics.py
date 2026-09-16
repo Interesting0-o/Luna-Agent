@@ -379,45 +379,48 @@ class TestDefenseRateModulation:
         )
 
     def test_deact_reduces_stimulus_response(self, default_traits, default_relationship):
-        """deact 降低刺激接受速率 β。
+        """deact 不影响 internal state——只压抑 surface 表达。
 
-        旧测试检验 deact→γ 的调制已被移除。
-        新设计: defense profiles 仅调制 β（刺激接受速率），不调制 γ。
-        hyper 高 → 刺激响应更大，deact 高 → 刺激响应更小。
+        方案 B (2026-06-24): 防御不再调制 beta_stim。
+        防御路径重新分配:
+          - hyper → 放大 inner_stimuli（影响 internal state 和 relationship state）
+          - deact → 压抑 outer_stimuli（只影响 surface，不影响 internal state）
+
+        同样的刺激:
+          - 高 hyper 组: inner 被放大 → internal state 变化更大
+          - 低 hyper 组: inner 接近 raw → internal state 变化更小
+          - deact 的高低: 对 internal state 无直接影响
         """
         setpoint = compute_setpoint(default_traits)
-        current = setpoint.copy()  # 从 setpoint 出发
+        current = setpoint.copy()
         stim = np.zeros(ST_SIZE); stim[ST_CONFLICT] = 0.5
 
-        # 高 deact + 低 hyper — 刺激响应应较小
-        p_high_deact = np.zeros((2, ST_SIZE))
-        p_high_deact[0] = 0.9  # deact
-        p_high_deact[1] = 0.1  # hyper
+        # 高 deact + 低 hyper -- inner ≈ raw，变化小
+        p_high = np.zeros((2, ST_SIZE))
+        p_high[0] = 0.9  # deact
+        p_high[1] = 0.1  # hyper
+        inner_high, _ = apply_defenses(stim, p_high)
         new_high = update_internal_state(
-            current.copy(), stim, default_traits, default_relationship, p_high_deact,
+            current.copy(), inner_high, default_traits, default_relationship, p_high,
         )
 
-        # 低 deact + 高 hyper — 刺激响应应较大
-        p_low_deact = np.zeros((2, ST_SIZE))
-        p_low_deact[0] = 0.1  # deact
-        p_low_deact[1] = 0.9  # hyper
-
+        # 低 deact + 高 hyper -- inner 被 hyper 放大，变化大
+        p_low = np.zeros((2, ST_SIZE))
+        p_low[0] = 0.1  # deact
+        p_low[1] = 0.9  # hyper
+        inner_low, _ = apply_defenses(stim, p_low)
         new_low = update_internal_state(
-            current.copy(), stim, default_traits, default_relationship, p_low_deact,
+            current.copy(), inner_low, default_traits, default_relationship, p_low,
         )
 
-        # 低 deact 组应偏离 setpoint 更多（β 更大，刺激影响更强）
         dev_high = np.linalg.norm(new_high - setpoint)
         dev_low = np.linalg.norm(new_low - setpoint)
+
+        # hyper 高 → inner 放大 → 偏离 setpoint 更远
         assert dev_low > dev_high, (
-            f"高 hyper+低 deact 应响应更强: deact=0.9 dev={dev_high:.4f}, "
-            f"deact=0.1 dev={dev_low:.4f}"
+            f"高 hyper 应使 inner 更大: "
+            f"low-hyper dev={dev_high:.4f}, high-hyper dev={dev_low:.4f}"
         )
-
-
-# ═══════════════════════════════════════════════════════════════
-# 大规模随机测试
-# ═══════════════════════════════════════════════════════════════
 
 class TestDynamicsBulk:
     """大量随机输入: 所有输出必须在 [-1, 1]，不产生 NaN。"""
